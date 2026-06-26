@@ -62,4 +62,4 @@ List the components and how they interact:
 
 ## 3. Reference Files
 
-- Use [example_log.md](file:///c:/Users/leond/Desktop/agy2-projects/_Capstone_Project/skills/prompt-documentation-skill/references/example_log.md) in the `references/` directory as the template reference for writing future logs.
+- Use [example_log.md](references/example_log.md) in the `references/` directory as the template reference for writing future logs.
