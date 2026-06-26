@@ -17,33 +17,16 @@ The agent utilizes the plant category database located in the skill resources fo
 
 ---
 
-## 2. Soil Moisture Depletion Model
+## 2. Soil Moisture Depletion Model (Conceptual)
 
-To estimate a plant's current soil moisture level ($M_{\text{current}}$), the agent performs a daily simulation starting from the day after the last watering ($M = 100\%$) up to the current day. 
+The soil moisture level is calculated deterministically in Python (by simulating daily water loss starting from 100% after watering down to the current day). 
 
-For each day $d$ in the weather history:
-
-$$M_{d} = M_{d-1} - \text{DailyDepletion}_{d}$$
-
-Where the daily moisture depletion rate ($\text{DailyDepletion}_{d}$) is calculated as:
-
-$$\text{DailyDepletion}_{d} = B \times F_{\text{temp}} \times F_{\text{sun}} \times F_{\text{humidity}} - \text{RainBonus}_{d}$$
-
-### Parameters & Factors:
-1.  **Base Depletion ($B$):** Loaded from `resources/plant_database.json` matching the plant's `species` parameter (which represents the category name, e.g., "Kräuter (Wasserliebend)" or "Sukkulenten & Kakteen").
-    *   *If the category is not directly found in the database:* Match it to the closest category available and extract its parameters.
-2.  **Temperature Factor ($F_{\text{temp}}$):** Calculated from the day's mean temperature ($T_{\text{mean}}$):
-    *   $F_{\text{temp}} = T_{\text{mean}} / 20.0$ (restricted to a minimum of 0.2 in freezing weather).
-3.  **Sun Exposure Factor ($F_{\text{sun}}$):** Combines the plant's configured sun hours ($S_{\text{plant}}$) and the category's optimal sun hours ($S_{\text{optimal}}$):
-    *   $F_{\text{sun}} = 1.0 + 0.15 \times (S_{\text{plant}} - S_{\text{optimal}})$ (restricted to a minimum of 0.2 in heavy shade).
-    *   *Interpretation:* Each hour of sun above the optimal requirement increases water consumption by 15%. Each hour of deficit decreases consumption by 15%.
-4.  **Humidity Factor ($F_{\text{humidity}}$):** Calculated from the day's mean relative humidity ($H_{\text{mean}}$):
-    *   $F_{\text{humidity}} = 1.5 - (H_{\text{mean}} / 100.0)$
-5.  **Rain Bonus ($\text{RainBonus}_{d}$):**
-    *   *If the balcony is covered:* $\text{RainBonus}_{d} = 0\%$
-    *   *If the balcony is open:* $\text{RainBonus}_{d} = \text{Precipitation (mm)} \times 15\%$ (e.g., 2mm of rain adds $30\%$ moisture).
-
-*Note: Soil moisture is clamped between $0\%$ and $100\%$ at the end of each simulated day.*
+To write accurate German explanations, you should understand the conceptual relationships behind the calculations:
+1.  **Baseline Consumption:** Each plant category has a baseline daily water depletion rate (e.g., water-loving herbs dry out quickly, while succulents lose very little moisture).
+2.  **Temperature Impact:** Higher temperatures accelerate drying (proportional to deviation from 20°C), while cooler weather slows it down.
+3.  **Sun Exposure Impact:** For every hour that the plant's configured sun exposure exceeds the category's optimal sun hours, evaporation increases by 15%. Conversely, shade decreases water needs by 15% per hour of deficit.
+4.  **Humidity Impact:** Dry air (lower relative humidity) increases evaporation, while moist air slows it down.
+5.  **Precipitation (Rain):** If the balcony is open (not covered), rain adds moisture to the soil (1mm of rain adds roughly 15% moisture). If the balcony is covered, rain is ignored.
 
 ---
 
