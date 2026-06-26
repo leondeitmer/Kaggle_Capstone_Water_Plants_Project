@@ -62,3 +62,9 @@ The agent must output a concise 1-2 sentence German explanation summarizing the 
 - Mention recent weather parameters (e.g., high temperatures, low humidity, or rain).
 - **Sun Exposure Impact:** Explicitly mention if the plant's actual sun hours deviate from the optimal sun hours for its category (e.g., "Da die Pflanze mit 8 Std. Sonne mehr Licht bekommt als die optimalen 5 Std., verdunstet sie Wasser schneller." or "Der halbschattige Standort (2 Std. statt 5 Std. Sonne) reduziert den Wasserbedarf.").
 - Mention if the balcony coverage (covered vs. open) and recent rain impacted the soil moisture.
+
+---
+
+## 5. Implementation Script Reference
+
+- The mathematical model described above is implemented in the executable script located at [moisture_calculator.py](scripts/moisture_calculator.py) in the `scripts/` directory. The main backend dynamically loads and executes this script to calculate soil moisture values before requesting explanations.

@@ -148,12 +148,14 @@ async def analyze_plants_watering(balcony_config: dict, plants: list) -> List[di
     # 4. Load Botanical Watering Skill and Plant Database dynamically
     skill_content = "You are a botanical agent. Estimate watering requirements."
     db_content = "{}"
+    calculator_module = None
     
     try:
         # Resolve paths relative to the project root
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         skill_path = os.path.join(base_dir, "skills", "botanical-watering-skill", "SKILL.md")
         db_path = os.path.join(base_dir, "skills", "botanical-watering-skill", "resources", "plant_database.json")
+        script_path = os.path.join(base_dir, "skills", "botanical-watering-skill", "scripts", "moisture_calculator.py")
         
         if os.path.exists(skill_path):
             with open(skill_path, "r", encoding="utf-8") as f:
@@ -166,13 +168,33 @@ async def analyze_plants_watering(balcony_config: dict, plants: list) -> List[di
                 db_content = f.read()
         else:
             logger.warning(f"Plant database not found at {db_path}")
+
+        # Dynamically load the moisture calculator script from the skill folder
+        if os.path.exists(script_path):
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("moisture_calculator", script_path)
+            calculator_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(calculator_module)
+            logger.info("Successfully loaded moisture calculator script from skill folder.")
+        else:
+            logger.warning(f"Moisture calculator script not found at {script_path}")
     except Exception as e:
         logger.error(f"Error loading skill files: {str(e)}")
 
-    # 5. Construct the prompt for the Gemini Agent with the reference database
+    # 5. Run the calculations deterministically in Python using the skill script
+    calculated_results = []
+    if calculator_module:
+        try:
+            calculated_results = calculator_module.calculate_plants_moisture(balcony_config, plants, weather_data)
+            logger.info(f"Calculated moisture levels in Python: {calculated_results}")
+        except Exception as e:
+            logger.error(f"Error running Python moisture calculator: {str(e)}")
+            calculated_results = []
+
+    # 6. Construct the prompt for the Gemini Agent to generate explanations matching the calculated data
     prompt = f"""
-We have a reference plant database defining daily depletion rates and optimal sun hours:
-{db_content}
+We have calculated the following deterministic moisture levels, statuses, and next watering dates for the user's plants using the moisture calculator script:
+{json.dumps(calculated_results, indent=2)}
 
 ### Balcony Location:
 - City/Location: {location_name}
@@ -182,10 +204,17 @@ We have a reference plant database defining daily depletion rates and optimal su
 ### Weather Conditions over the past {past_days} days:
 {json.dumps(weather_data, indent=2)}
 
-### Plants to Analyze:
+### Original Plant Config:
 {json.dumps(plants, indent=2)}
 
-Please calculate the soil moisture levels, next watering dates, and status for each plant in the list according to the formulas and parameters defined in the System Instruction, and return the response in the specified BatchAnalysisResponse schema.
+### Instructions:
+For each plant in the list, you must preserve the pre-calculated 'moisture_level', 'status', and 'next_watering_date' values exactly as given above.
+Your task is to write a concise 1-2 sentence German explanation summarizing the reasoning for these numbers, citing:
+1. The estimated moisture level.
+2. The weather parameters (recent temperatures, relative humidity, or rain if applicable).
+3. The impact of the plant's sun hours setting (especially if it deviates from the optimal sun hours for its category) and whether the balcony coverage protected it from rain.
+
+Return the final results matching the BatchAnalysisResponse schema.
 """
 
     try:
