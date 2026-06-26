@@ -4,7 +4,7 @@ from mcp.server.fastmcp import FastMCP
 # Initialize FastMCP Server
 mcp = FastMCP("FloraCast Weather Service")
 
-NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+GEO_API_URL = "https://geocoding-api.open-meteo.com/v1/search"
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 
 @mcp.tool()
@@ -20,29 +20,27 @@ async def geocode_location(city: str, zip_code: str = "") -> dict:
         A dict containing 'latitude', 'longitude', and 'display_name', or an error message.
     """
     query = f"{zip_code} {city}".strip()
-    headers = {
-        "User-Agent": "FloraCast-Agent-Water-Advisor/1.0 (leond@example.com)"
-    }
     params = {
-        "q": query,
-        "format": "json",
-        "limit": 1
+        "name": query,
+        "count": 1,
+        "format": "json"
     }
     
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(NOMINATIM_URL, params=params, headers=headers, timeout=10.0)
+            response = await client.get(GEO_API_URL, params=params, timeout=10.0)
             response.raise_for_status()
             data = response.json()
             
-            if not data:
+            if "results" not in data or not data["results"]:
                 return {"error": f"Location '{query}' could not be resolved."}
             
-            result = data[0]
+            result = data["results"][0]
+            display_name = f"{result['name']}, {result.get('country', '')}"
             return {
-                "latitude": float(result["lat"]),
-                "longitude": float(result["lon"]),
-                "display_name": result["display_name"]
+                "latitude": float(result["latitude"]),
+                "longitude": float(result["longitude"]),
+                "display_name": display_name
             }
     except Exception as e:
         return {"error": f"Geocoding failed: {str(e)}"}

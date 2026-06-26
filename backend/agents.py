@@ -145,9 +145,34 @@ async def analyze_plants_watering(balcony_config: dict, plants: list) -> List[di
         # Fallback empty weather dataset to let LLM estimate based on general profiles
         weather_data = {"note": "Weather service unavailable. Estimate based on general climate."}
         
-    # 4. Construct the prompt for the Gemini Agent
+    # 4. Load Botanical Watering Skill and Plant Database dynamically
+    skill_content = "You are a botanical agent. Estimate watering requirements."
+    db_content = "{}"
+    
+    try:
+        # Resolve paths relative to the project root
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        skill_path = os.path.join(base_dir, "skills", "botanical-watering-skill", "SKILL.md")
+        db_path = os.path.join(base_dir, "skills", "botanical-watering-skill", "resources", "plant_database.json")
+        
+        if os.path.exists(skill_path):
+            with open(skill_path, "r", encoding="utf-8") as f:
+                skill_content = f.read()
+        else:
+            logger.warning(f"Skill file not found at {skill_path}")
+            
+        if os.path.exists(db_path):
+            with open(db_path, "r", encoding="utf-8") as f:
+                db_content = f.read()
+        else:
+            logger.warning(f"Plant database not found at {db_path}")
+    except Exception as e:
+        logger.error(f"Error loading skill files: {str(e)}")
+
+    # 5. Construct the prompt for the Gemini Agent with the reference database
     prompt = f"""
-You are the FloraCast Botanical and Watering Agent. Your task is to analyze the watering requirements of the user's balcony plants.
+We have a reference plant database defining daily depletion rates and optimal sun hours:
+{db_content}
 
 ### Balcony Location:
 - City/Location: {location_name}
@@ -160,22 +185,7 @@ You are the FloraCast Botanical and Watering Agent. Your task is to analyze the 
 ### Plants to Analyze:
 {json.dumps(plants, indent=2)}
 
-### Instructions:
-For each plant in the list:
-1. Retrieve its typical watering profile (e.g. high/medium/low water needs, preferred environment).
-2. Calculate the estimated soil moisture level (0-100%) based on:
-   - The time since it was last watered.
-   - The weather history: Higher temperatures and lower humidity dry plants out faster. 
-   - Sun exposure: The plant's specific 'sunHours' per day.
-   - Rain: If the balcony is NOT covered, subtract the precipitation (in mm) from the water deficit (each 1mm of rain provides moisture, but if the balcony is covered, ignore rain).
-3. Determine the status:
-   - 'Water Now': If moisture is below 25% or watering is severely overdue.
-   - 'Water Soon': If moisture is between 25% and 50% or it will need water in the next 24 hours.
-   - 'Healthy': If moisture is above 50% and it doesn't need watering yet.
-4. Predict the next watering date.
-5. Provide a short explanation (1-2 sentences) in German summarizing your reasoning (mentioning recent temperatures, sun hours, and rain if applicable).
-
-Return the results matching the BatchAnalysisResponse schema.
+Please calculate the soil moisture levels, next watering dates, and status for each plant in the list according to the formulas and parameters defined in the System Instruction, and return the response in the specified BatchAnalysisResponse schema.
 """
 
     try:
@@ -185,9 +195,10 @@ Return the results matching the BatchAnalysisResponse schema.
             model='gemini-2.5-flash',
             contents=prompt,
             config=types.GenerateContentConfig(
+                system_instruction=skill_content,
                 response_mime_type="application/json",
                 response_schema=BatchAnalysisResponse,
-                temperature=0.2
+                temperature=0.1
             )
         )
         
