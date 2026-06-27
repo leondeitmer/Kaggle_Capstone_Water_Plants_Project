@@ -1,0 +1,81 @@
+{
+  "categories": [
+    {
+      "id": "kraeuter_wasserliebend",
+      "name": "Kräuter (Wasserliebend)",
+      "description": "Wasserliebende, zarte Kräuter wie Basilikum, Minze, Petersilie, Schnittlauch, Dill oder Koriander.",
+      "base_depletion_pct": 18,
+      "optimal_sun_hours": 5
+    },
+    {
+      "id": "kraeuter_mediterran",
+      "name": "Kräuter (Mediterran)",
+      "description": "Robuste, sonnenhungrige mediterrane Kräuter wie Rosmarin, Thymian, Salbei, Oregano, Majoran oder Lavendel.",
+      "base_depletion_pct": 6,
+      "optimal_sun_hours": 7
+    },
+    {
+      "id": "sukkulenten_kakteen",
+      "name": "Sukkulenten & Kakteen",
+      "description": "Trockenheitsresistente Pflanzen mit Wasserspeichern wie Aloe Vera, Hauswurz, Echeverien oder Kakteen.",
+      "base_depletion_pct": 3,
+      "optimal_sun_hours": 6
+    },
+    {
+      "id": "bluehpflanzen_durstig",
+      "name": "Blühpflanzen (Durstig)",
+      "description": "Stark blühende, wasserintensive Balkonblumen wie Hortensien, Petunien, Fuchsien, Wandelröschen, Zauberglöckchen oder Männertreu.",
+      "base_depletion_pct": 20,
+      "optimal_sun_hours": 5
+    },
+    {
+      "id": "bluehpflanzen_normal",
+      "name": "Blühpflanzen (Normal)",
+      "description": "Klassische Balkonblumen mit moderatem Wasserbedarf wie Geranien, Margeriten, Begonien, Stiefmütterchen, Glockenblumen oder Vergissmeinnicht.",
+      "base_depletion_pct": 11,
+      "optimal_sun_hours": 5
+    },
+    {
+      "id": "gemuese_durstig",
+      "name": "Gemüse (Durstig)",
+      "description": "Wasserintensive Gemüsepflanzen mit großem Laub wie Tomaten, Gurken oder Zucchini.",
+      "base_depletion_pct": 18,
+      "optimal_sun_hours": 7
+    },
+    {
+      "id": "gemuese_normal",
+      "name": "Gemüse (Normal)",
+      "description": "Gemüsepflanzen mit moderatem Wasserbedarf wie Chili, Paprika, Radieschen oder Salat.",
+      "base_depletion_pct": 12,
+      "optimal_sun_hours": 6
+    },
+    {
+      "id": "obst_beeren",
+      "name": "Obst & Beeren",
+      "description": "Beerensträucher und Obstpflanzen für den Balkon wie Erdbeeren, Heidelbeeren, Himbeeren oder Physalis.",
+      "base_depletion_pct": 14,
+      "optimal_sun_hours": 6
+    },
+    {
+      "id": "kuebelpflanzen_mediterran",
+      "name": "Kübelpflanzen (Mediterran)",
+      "description": "Verholzte Kübelpflanzen mit gutem Trockenheitsschutz wie Olivenbäume, Zitronenbäume, Oleander oder Feigenbäume.",
+      "base_depletion_pct": 8,
+      "optimal_sun_hours": 7
+    },
+    {
+      "id": "kletterpflanzen_efeu",
+      "name": "Kletterpflanzen & Efeu",
+      "description": "Kletternde Rankpflanzen oder Bodendecker wie Efeu, Wilder Wein, Geißblatt oder Clematis.",
+      "base_depletion_pct": 8,
+      "optimal_sun_hours": 4
+    },
+    {
+      "id": "gruenpflanzen_schattig",
+      "name": "Grünpflanzen (Schattig)",
+      "description": "Schattenliebende Blattschmuckpflanzen wie Farne, Funkien (Hosta) oder Ziergräser.",
+      "base_depletion_pct": 12,
+      "optimal_sun_hours": 3
+    }
+  ]
+}

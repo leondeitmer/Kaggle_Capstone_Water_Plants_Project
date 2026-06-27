@@ -13,7 +13,7 @@ COPY pyproject.toml ./
 RUN uv pip install --system --requirement pyproject.toml
 
 # Copy codebase
-COPY main.py ./
+COPY main.py moisture_calculator.py plant_database.json ./
 COPY static/ ./static/
 
 # Set production env variables

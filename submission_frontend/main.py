@@ -16,17 +16,20 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("submission_frontend")
 
-# Add botanical watering skill scripts to system path
-base_project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-skill_scripts_dir = os.path.join(base_project_dir, "skills", "botanical-watering-skill", "scripts")
-if skill_scripts_dir not in sys.path:
-    sys.path.append(skill_scripts_dir)
-
+# Import calculate_plant_moisture locally or fallback to botanical watering skill scripts path
 try:
     from moisture_calculator import calculate_plant_moisture
-    logger.info("Successfully imported calculate_plant_moisture from Botanical Watering Skill.")
-except Exception as e:
-    logger.error(f"Failed to import calculate_plant_moisture: {e}")
+    logger.info("Successfully imported calculate_plant_moisture locally.")
+except ImportError:
+    base_project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    skill_scripts_dir = os.path.join(base_project_dir, "skills", "botanical-watering-skill", "scripts")
+    if skill_scripts_dir not in sys.path:
+        sys.path.append(skill_scripts_dir)
+    try:
+        from moisture_calculator import calculate_plant_moisture
+        logger.info("Successfully imported calculate_plant_moisture from Botanical Watering Skill.")
+    except Exception as e:
+        logger.error(f"Failed to import calculate_plant_moisture: {e}")
 
 # Initialize Vertex AI SDK
 import vertexai
