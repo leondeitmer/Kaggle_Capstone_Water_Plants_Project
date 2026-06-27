@@ -1,0 +1,3 @@
+Deploy the submission_frontend folder as "garden-organizer-dashboard" to Cloud Run. Pass
+GOOGLE_CLOUD_PROJECT, and AGENT_RUNTIME_ID as environment variables, and configure the deployment to allow unauthenticated invocations so it is publicly reachable. After it deploys, grant the dashboard's runtime service account the necessary roles on the project so it can resume the Agent
+Runtime agent and query its sessions. Print the Dashboard URL when done.
