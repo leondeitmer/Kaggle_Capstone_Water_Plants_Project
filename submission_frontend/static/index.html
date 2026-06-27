@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="FloraCast Dashboard - AI-powered plant-watering advisor." />
+    <title>FloraCast // Premium AI Plant Advisor</title>
+    
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div id="app">
+      <!-- Background Decorative Blobs -->
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      
+      <header class="app-header">
+        <div class="logo">
+          <i class="fa-solid fa-seedling header-leaf animate-float"></i>
+          <h1>Flora<span>Cast</span></h1>
+        </div>
+        <p class="subtitle">AI-Powered Watering Recommendations & Weather Insights</p>
+      </header>
+
+      <main class="container">
+        <!-- Balcony Profile Header Card -->
+        <section class="control-panel glass">
+          <div class="balcony-header-row">
+            <div class="balcony-profile-info">
+              <h3><i class="fa-solid fa-cloud-sun"></i> Balcony Profile</h3>
+              <div class="balcony-info-grid">
+                <div>
+                  <span class="label">Location:</span>
+                  <span id="display-location" class="val">Munich</span>
+                </div>
+                <div>
+                  <span class="label">Default Sun Exposure:</span>
+                  <span id="display-sun" class="val">5.0 hrs/day</span>
+                </div>
+                <div>
+                  <span class="label">Balcony Type:</span>
+                  <span id="display-covered" class="val">Open (Rain exposed)</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="balcony-actions">
+              <button id="btn-edit-balcony" class="btn btn-secondary">
+                <i class="fa-solid fa-gear"></i> Edit Balcony
+              </button>
+              <button id="btn-add-plant" class="btn btn-primary">
+                <i class="fa-solid fa-plus"></i> Add Plant
+              </button>
+              <button id="btn-analyze-all" class="btn btn-accent">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Run AI Analysis
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Main Body Grid: Plants on Left, Weather & Sessions on Right -->
+        <div class="grid-layout">
+          <!-- Plants List Section -->
+          <section class="plants-section">
+            <div class="section-header">
+              <h2>My Plants (<span id="plant-count">0</span>)</h2>
+            </div>
+            <div id="plants-grid" class="plants-grid scrollable-y">
+              <!-- Dynamic Plant Cards will be injected here -->
+            </div>
+          </section>
+
+          <!-- Side Widgets Column -->
+          <div class="side-column">
+            <!-- Weather Card -->
+            <section class="weather-card glass" id="weather-widget">
+              <h3><i class="fa-solid fa-cloud-sun"></i> Live Weather</h3>
+              <div class="weather-content loading-placeholder">
+                <p>Loading weather data...</p>
+              </div>
+            </section>
+
+            <!-- Active Sessions Card -->
+            <section class="sessions-card glass">
+              <h3><i class="fa-solid fa-history"></i> Recent AI Sessions</h3>
+              <div class="sessions-list scrollable-y" id="sessions-container">
+                <p class="empty-sessions">No sessions analyzed yet.</p>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <!-- Modal: Add / Edit Plant -->
+      <div id="modal-plant" class="modal">
+        <div class="modal-content glass">
+          <div class="modal-header">
+            <h3 id="modal-plant-title">Add New Plant</h3>
+            <span class="close-btn" id="close-modal-plant">&times;</span>
+          </div>
+          <form id="form-plant" class="modal-form">
+            <input type="hidden" id="field-plant-id" />
+            <div class="form-group">
+              <label for="field-plant-name">Plant Name*</label>
+              <input type="text" id="field-plant-name" required placeholder="e.g. My Sweet Basil" />
+            </div>
+            <div class="form-group">
+              <label for="field-plant-species">Plant Category*</label>
+              <select id="field-plant-species" required>
+                <option value="" disabled selected>Select category...</option>
+                <option value="Water-loving Herbs">Herbs - Water-loving (e.g. Basil, Mint, Parsley)</option>
+                <option value="Mediterranean Herbs">Herbs - Mediterranean/Robust (e.g. Rosemary, Thyme, Lavender)</option>
+                <option value="Succulents & Cacti">Succulents & Cacti (e.g. Aloe Vera, Houseleek)</option>
+                <option value="Thirsty Flowers">Flowers - Water-loving (e.g. Hydrangea, Petunia, Fuchsia)</option>
+                <option value="Normal Flowers">Flowers - Normal (e.g. Geranium, Daisy, Begonia)</option>
+                <option value="Thirsty Vegetables">Vegetables - Water-loving (e.g. Tomato, Cucumber, Zucchini)</option>
+                <option value="Normal Vegetables">Vegetables - Normal (e.g. Chili, Bell Pepper)</option>
+                <option value="Fruits & Berries">Fruits & Berries (e.g. Strawberry, Raspberry)</option>
+                <option value="Mediterranean Container Plants">Container Plants - Mediterranean (e.g. Olive tree, Lemon tree)</option>
+                <option value="Climbing Plants & Ivy">Climbing Plants & Ivy (e.g. Ivy, Clematis)</option>
+                <option value="Shade Plants">Green Plants & Ferns - Shade-loving (e.g. Ferns, Hosta)</option>
+              </select>
+            </div>
+            <div class="form-group-row">
+              <div class="form-group">
+                <label for="field-plant-sun">Sun Exposure (Hours/Day)*</label>
+                <input type="number" id="field-plant-sun" required min="0" max="24" step="0.5" />
+              </div>
+              <div class="form-group">
+                <label for="field-plant-last-watered">Last Watered*</label>
+                <input type="datetime-local" id="field-plant-last-watered" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="field-plant-image">Image URL (Optional)</label>
+              <input type="url" id="field-plant-image" placeholder="https://images.unsplash.com/... (optional)" />
+            </div>
+            <div class="form-group">
+              <label for="field-plant-desc">Location / Description</label>
+              <textarea id="field-plant-desc" rows="2" placeholder="e.g. Placed in the sunny corner of the balcony..."></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" id="btn-cancel-plant">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save Plant</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Modal: Edit Balcony Settings -->
+      <div id="modal-balcony" class="modal">
+        <div class="modal-content glass">
+          <div class="modal-header">
+            <h3>Edit Balcony Settings</h3>
+            <span class="close-btn" id="close-modal-balcony">&times;</span>
+          </div>
+          <form id="form-balcony" class="modal-form">
+            <div class="form-group-row">
+              <div class="form-group">
+                <label for="field-balcony-city">City*</label>
+                <input type="text" id="field-balcony-city" required placeholder="e.g. Munich" />
+              </div>
+              <div class="form-group">
+                <label for="field-balcony-zip">Zip Code*</label>
+                <input type="text" id="field-balcony-zip" required placeholder="e.g. 80331" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="field-balcony-sun">Default Daily Sun Exposure (Hours)*</label>
+              <input type="number" id="field-balcony-sun" required min="0" max="24" step="0.5" />
+            </div>
+            <div class="form-group checkbox-group">
+              <input type="checkbox" id="field-balcony-covered" />
+              <label for="field-balcony-covered">Balcony is covered (No rain falls on plants)</label>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" id="btn-cancel-balcony">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save Settings</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Loading / Progress Overlay -->
+      <div id="loading-overlay" class="overlay">
+        <div class="spinner-container glass">
+          <div class="spinner"></div>
+          <p id="loading-text">Calling Vertex AI Deployed Agent...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Frontend logic scripts -->
+    <script>
+      const API_BASE = window.location.origin;
+
+      // Mock Default Data
+      const DEFAULT_PLANTS = [
+        {
+          id: "default-1",
+          name: "Big Basil",
+          species: "Water-loving Herbs",
+          lastWatered: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          sunHours: 6.0,
+          imageUrl: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=300&auto=format&fit=crop&q=80",
+          description: "Main balcony, middle.",
+          moisture_level: 65,
+          status: "Healthy",
+          next_watering_date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          explanation: "Basil has experienced moderate temperatures. It will need water in approximately 1 day."
+        },
+        {
+          id: "default-2",
+          name: "Hanging Strawberry",
+          species: "Fruits & Berries",
+          lastWatered: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+          sunHours: 5.0,
+          imageUrl: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=300&auto=format&fit=crop&q=80",
+          description: "On the left railing.",
+          moisture_level: 22,
+          status: "Water Now",
+          next_watering_date: new Date().toISOString().split('T')[0],
+          explanation: "The strawberry has been dry for 4 days. Sun exposure has dried out the soil!"
+        },
+        {
+          id: "default-3",
+          name: "Little Aloe Vera",
+          species: "Succulents & Cacti",
+          lastWatered: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+          sunHours: 3.0,
+          imageUrl: "https://images.unsplash.com/photo-1509423306649-46dc9734f49b?w=300&auto=format&fit=crop&q=80",
+          description: "Top shadow shelf.",
+          moisture_level: 80,
+          status: "Healthy",
+          next_watering_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          explanation: "As a succulent, Aloe Vera consumes very little water. The soil is still damp enough."
+        }
+      ];
+
+      const DEFAULT_BALCONY = {
+        city: "Munich",
+        zipCode: "80331",
+        defaultSunHours: 5.0,
+        isCovered: false
+      };
+
+      // App State
+      let state = {
+        plants: JSON.parse(localStorage.getItem("floracast_plants")) || DEFAULT_PLANTS,
+        balcony: JSON.parse(localStorage.getItem("floracast_balcony")) || DEFAULT_BALCONY
+      };
+
+      // DOM Elements
+      const plantsGrid = document.getElementById("plants-grid");
+      const plantCount = document.getElementById("plant-count");
+      
+      const displayLocation = document.getElementById("display-location");
+      const displaySun = document.getElementById("display-sun");
+      const displayCovered = document.getElementById("display-covered");
+      
+      const modalPlant = document.getElementById("modal-plant");
+      const modalBalcony = document.getElementById("modal-balcony");
+      const loadingOverlay = document.getElementById("loading-overlay");
+      const loadingText = document.getElementById("loading-text");
+      const sessionsContainer = document.getElementById("sessions-container");
+
+      // Save to localStorage
+      function saveState() {
+        localStorage.setItem("floracast_plants", JSON.stringify(state.plants));
+        localStorage.setItem("floracast_balcony", JSON.stringify(state.balcony));
+      }
+
+      // Render Balcony Info
+      function renderBalcony() {
+        displayLocation.textContent = `${state.balcony.city} (${state.balcony.zipCode})`;
+        displaySun.textContent = `${state.balcony.defaultSunHours} hrs/day`;
+        displayCovered.textContent = state.balcony.isCovered ? "Covered (No Rain)" : "Open (Rain exposed)";
+      }
+
+      // Render Plant Cards
+      function renderPlants() {
+        plantCount.textContent = state.plants.length;
+        
+        if (state.plants.length === 0) {
+          plantsGrid.innerHTML = `
+            <div class="no-plants-placeholder">
+              <i class="fa-solid fa-seedling"></i>
+              <p>No plants added yet. Click 'Add Plant' to start your inventory!</p>
+            </div>
+          `;
+          return;
+        }
+
+        plantsGrid.innerHTML = state.plants.map(plant => {
+          const defaultImg = "https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=300&auto=format&fit=crop&q=80";
+          const imgUrl = plant.imageUrl || defaultImg;
+          const lastWateredDate = new Date(plant.lastWatered).toLocaleString();
+          
+          const moisture = plant.moisture_level !== undefined ? `${plant.moisture_level}%` : "Not analyzed";
+          const status = plant.status || "Healthy";
+          const statusClass = status.toLowerCase().replace(" ", "-");
+          
+          return `
+            <div class="plant-card glass fade-in">
+              <div class="plant-card-img" style="background-image: url('${imgUrl}')"></div>
+              <div class="plant-card-content">
+                <div class="plant-header">
+                  <h4>${plant.name}</h4>
+                  <span class="badge badge-${statusClass}">${status}</span>
+                </div>
+                <p class="plant-category"><i class="fa-solid fa-tag"></i> ${plant.species}</p>
+                <p class="plant-meta"><strong>Sun Exposure:</strong> ${plant.sunHours} hrs/day</p>
+                <p class="plant-meta"><strong>Last Watered:</strong> ${lastWateredDate}</p>
+                
+                <div class="plant-moisture-bar">
+                  <div class="moisture-label">Moisture: <strong>${moisture}</strong></div>
+                  <div class="bar-bg">
+                    <div class="bar-fill moisture-${statusClass}" style="width: ${plant.moisture_level || 0}%"></div>
+                  </div>
+                </div>
+
+                ${plant.explanation ? `<div class="plant-explanation">${plant.explanation}</div>` : ""}
+                ${plant.next_watering_date ? `<p class="plant-meta"><strong>Next Watering:</strong> ${plant.next_watering_date}</p>` : ""}
+
+                <div class="plant-actions">
+                  <button class="btn btn-secondary btn-xs btn-analyze-single" data-id="${plant.id}">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Analyze
+                  </button>
+                  <button class="btn btn-danger btn-xs btn-delete-plant" data-id="${plant.id}">
+                    <i class="fa-solid fa-trash"></i> Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        // Attach event listeners to card actions
+        document.querySelectorAll(".btn-delete-plant").forEach(btn => {
+          btn.addEventListener("click", (e) => {
+            const id = btn.getAttribute("data-id");
+            deletePlant(id);
+          });
+        });
+
+        document.querySelectorAll(".btn-analyze-single").forEach(btn => {
+          btn.addEventListener("click", (e) => {
+            const id = btn.getAttribute("data-id");
+            analyzeSinglePlant(id);
+          });
+        });
+      }
+
+      // Delete Plant
+      function deletePlant(id) {
+        if (confirm("Are you sure you want to remove this plant?")) {
+          state.plants = state.plants.filter(p => p.id !== id);
+          saveState();
+          renderPlants();
+        }
+      }
+
+      // Fetch Weather details
+      async function updateWeather() {
+        try {
+          const res = await fetch(`${API_BASE}/api/weather/${encodeURIComponent(state.balcony.city)}`);
+          if (!res.ok) throw new Error("Weather fetch failed");
+          const data = await res.json();
+          
+          weatherWidget.innerHTML = `
+            <h3><i class="fa-solid fa-cloud-sun animate-pulse"></i> Live Weather in ${data.city}</h3>
+            <div class="weather-grid">
+              <div class="weather-metric">
+                <span class="lbl">Temperature</span>
+                <span class="val">${data.temp_c} °C / ${data.temp_f} °F</span>
+              </div>
+              <div class="weather-metric">
+                <span class="lbl">Humidity</span>
+                <span class="val">${data.humidity}%</span>
+              </div>
+              <div class="weather-metric">
+                <span class="lbl">Precipitation</span>
+                <span class="val">${data.precipitation_mm} mm / ${data.precipitation_in} in</span>
+              </div>
+            </div>
+            <div class="weather-coordinates">
+              Lat: ${data.latitude.toFixed(2)}, Lon: ${data.longitude.toFixed(2)}
+            </div>
+          `;
+        } catch (err) {
+          weatherWidget.innerHTML = `
+            <h3><i class="fa-solid fa-triangle-exclamation"></i> Weather Info</h3>
+            <p class="error-msg">Could not load weather details for "${state.balcony.city}".</p>
+          `;
+        }
+      }
+
+      // Fetch Sessions List
+      async function updateSessions() {
+        try {
+          const res = await fetch(`${API_BASE}/api/sessions`);
+          if (!res.ok) throw new Error("Sessions fetch failed");
+          const sessions = await res.json();
+          
+          if (sessions.length === 0) {
+            sessionsContainer.innerHTML = '<p class="empty-sessions">No sessions analyzed yet.</p>';
+            return;
+          }
+
+          sessionsContainer.innerHTML = sessions.map(s => `
+            <div class="session-item">
+              <div class="session-header-row">
+                <span class="sess-title">${s.plant_name} (${s.species})</span>
+                <span class="badge badge-${s.status.toLowerCase().replace(" ", "-")}">${s.status}</span>
+              </div>
+              <div class="sess-meta">
+                <span>Moisture: ${s.moisture_level}%</span> | 
+                <span>ID: ${s.session_id.substring(0, 15)}...</span>
+              </div>
+              <div class="sess-explanation">${s.explanation}</div>
+            </div>
+          `).join("");
+        } catch (err) {
+          console.error("Failed to load sessions:", err);
+        }
+      }
+
+      // Analyze Single Plant
+      async function analyzeSinglePlant(id) {
+        const plant = state.plants.find(p => p.id === id);
+        if (!plant) return;
+
+        loadingOverlay.classList.add("show");
+        loadingText.textContent = `Analyzing ${plant.name} via Agent Runtime...`;
+
+        try {
+          const url = new URL(`${API_BASE}/api/analyze`);
+          url.searchParams.append("city", state.balcony.city);
+          url.searchParams.append("plant_name", plant.name);
+          url.searchParams.append("species", plant.species);
+          url.searchParams.append("last_watered", plant.lastWatered);
+          url.searchParams.append("sun_hours", plant.sunHours);
+          url.searchParams.append("is_covered", state.balcony.isCovered);
+
+          const res = await fetch(url);
+          if (!res.ok) {
+            const errBody = await res.json();
+            throw new Error(errBody.detail || "Agent execution failed");
+          }
+          
+          const data = await res.json();
+          const analysis = data.analysis;
+
+          // Update plant details
+          plant.moisture_level = analysis.moisture_level;
+          plant.status = analysis.status;
+          plant.next_watering_date = analysis.next_watering_date;
+          plant.explanation = analysis.explanation;
+
+          saveState();
+          renderPlants();
+          await updateSessions();
+
+        } catch (err) {
+          alert(`Analysis failed for ${plant.name}: ${err.message}`);
+        } finally {
+          loadingOverlay.classList.remove("show");
+        }
+      }
+
+      // Analyze All Plants
+      document.getElementById("btn-analyze-all").addEventListener("click", async () => {
+        if (state.plants.length === 0) {
+          alert("Please add at least one plant to run analyses.");
+          return;
+        }
+
+        for (const plant of state.plants) {
+          await analyzeSinglePlant(plant.id);
+        }
+        await updateWeather();
+      });
+
+      // Modals Logic
+      const btnAddPlant = document.getElementById("btn-add-plant");
+      const btnEditBalcony = document.getElementById("btn-edit-balcony");
+      
+      const closePlant = document.getElementById("close-modal-plant");
+      const closeBalcony = document.getElementById("close-modal-balcony");
+      
+      const btnCancelPlant = document.getElementById("btn-cancel-plant");
+      const btnCancelBalcony = document.getElementById("btn-cancel-balcony");
+
+      const formPlant = document.getElementById("form-plant");
+      const formBalcony = document.getElementById("form-balcony");
+
+      btnAddPlant.addEventListener("click", () => {
+        formPlant.reset();
+        document.getElementById("field-plant-id").value = "";
+        document.getElementById("field-plant-sun").value = state.balcony.defaultSunHours;
+        
+        // Default datetime to 1 day ago
+        const dateInput = document.getElementById("field-plant-last-watered");
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        dateInput.value = oneDayAgo.toISOString().slice(0, 16);
+
+        modalPlant.classList.add("show");
+      });
+
+      btnEditBalcony.addEventListener("click", () => {
+        document.getElementById("field-balcony-city").value = state.balcony.city;
+        document.getElementById("field-balcony-zip").value = state.balcony.zipCode;
+        document.getElementById("field-balcony-sun").value = state.balcony.defaultSunHours;
+        document.getElementById("field-balcony-covered").checked = state.balcony.isCovered;
+        modalBalcony.classList.add("show");
+      });
+
+      function closeModal() {
+        modalPlant.classList.remove("show");
+        modalBalcony.classList.remove("show");
+      }
+
+      closePlant.addEventListener("click", closeModal);
+      closeBalcony.addEventListener("click", closeModal);
+      btnCancelPlant.addEventListener("click", closeModal);
+      btnCancelBalcony.addEventListener("click", closeModal);
+      window.addEventListener("click", (e) => {
+        if (e.target === modalPlant || e.target === modalBalcony) closeModal();
+      });
+
+      // Save Plant Form
+      formPlant.addEventListener("submit", (e) => {
+        e.preventDefault();
+        
+        const id = document.getElementById("field-plant-id").value || `plant-${Math.random().toString(36).substring(2, 9)}`;
+        const name = document.getElementById("field-plant-name").value.trim();
+        const species = document.getElementById("field-plant-species").value;
+        const sunHours = parseFloat(document.getElementById("field-plant-sun").value);
+        const lastWatered = new Date(document.getElementById("field-plant-last-watered").value).toISOString();
+        const imageUrl = document.getElementById("field-plant-image").value.trim();
+        const description = document.getElementById("field-plant-desc").value.trim();
+
+        const plantData = {
+          id,
+          name,
+          species,
+          sunHours,
+          lastWatered,
+          imageUrl,
+          description,
+          status: "Healthy",
+          moisture_level: undefined,
+          next_watering_date: undefined,
+          explanation: undefined
+        };
+
+        const existingIdx = state.plants.findIndex(p => p.id === id);
+        if (existingIdx !== -1) {
+          state.plants[existingIdx] = plantData;
+        } else {
+          state.plants.push(plantData);
+        }
+
+        saveState();
+        renderPlants();
+        closeModal();
+      });
+
+      // Save Balcony Form
+      formBalcony.addEventListener("submit", (e) => {
+        e.preventDefault();
+        
+        state.balcony.city = document.getElementById("field-balcony-city").value.trim();
+        state.balcony.zipCode = document.getElementById("field-balcony-zip").value.trim();
+        state.balcony.defaultSunHours = parseFloat(document.getElementById("field-balcony-sun").value);
+        state.balcony.isCovered = document.getElementById("field-balcony-covered").checked;
+
+        saveState();
+        renderBalcony();
+        updateWeather();
+        closeModal();
+      });
+
+      // Initial Setup
+      renderBalcony();
+      renderPlants();
+      updateWeather();
+      updateSessions();
+    </script>
+  </body>
+</html>
