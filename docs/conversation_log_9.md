@@ -10,24 +10,24 @@
 
 We deployed the `submission_frontend` directory directly to Google Cloud Run as a new service:
 - **Service Name:** `garden-organizer-dashboard`
-- **GCP Project:** `capstonewaterplantsproject` (Project Number `882498418292`)
+- **GCP Project:** `<YOUR_GCP_PROJECT_ID>` (Project Number `<YOUR_GCP_PROJECT_NUMBER>`)
 - **Region:** `us-east1`
 - **Source Code:** Deployed directly from the `submission_frontend/` folder using Cloud Build (building with the local `Dockerfile`).
 - **Access Control:** Configured to allow unauthenticated invocations (`--allow-unauthenticated`), making the dashboard publicly reachable.
 - **Environment Variables Configuration:**
-  - `GOOGLE_CLOUD_PROJECT=capstonewaterplantsproject`
-  - `AGENT_RUNTIME_ID=projects/882498418292/locations/us-east1/reasoningEngines/9003645633160019968`
+  - `GOOGLE_CLOUD_PROJECT=<YOUR_GCP_PROJECT_ID>`
+  - `AGENT_RUNTIME_ID=projects/<YOUR_GCP_PROJECT_NUMBER>/locations/<YOUR_GCP_REGION>/reasoningEngines/<YOUR_REASONING_ENGINE_ID>`
 
 The dashboard was successfully built and deployed at the following public endpoint:
-* **Dashboard URL:** `https://garden-organizer-dashboard-882498418292.us-east1.run.app`
+* **Dashboard URL:** `https://garden-organizer-dashboard-<YOUR_GCP_PROJECT_NUMBER>.<YOUR_GCP_REGION>.run.app`
 
 ---
 
 ## 2. IAM Configuration
 
 To allow the dashboard to communicate with the deployed Agent Runtime Reasoning Engine backend, we configured project-level IAM permissions:
-1. Identified the dashboard's runtime identity, which defaults to the Compute Engine default service account: `882498418292-compute@developer.gserviceaccount.com`.
-2. Granted this service account the Vertex AI User role (**`roles/aiplatform.user`**) on the `capstonewaterplantsproject` project.
+1. Identified the dashboard's runtime identity, which defaults to the Compute Engine default service account: `<YOUR_GCP_PROJECT_NUMBER>-compute@developer.gserviceaccount.com`.
+2. Granted this service account the Vertex AI User role (**`roles/aiplatform.user`**) on the `<YOUR_GCP_PROJECT_ID>` project.
 3. This grants the dashboard the permissions needed to call the agent backend (`vertexai.Client` and `agent_engines.get`), resume session states, and run queries.
 
 ---
@@ -85,6 +85,9 @@ We added and committed all changes using the Git Commit Version skill helper scr
 4. **Commit 4 (Test Content Assets):**
    - Added mock plant images (`Basil.png`, `Gerbera.png`, `Sukkulente.png`) in `test_content_assets/`.
    - Message: `feat: add mock plant images to test_content_assets`
+5. **Commit 5 (Project README.md):**
+   - Created a comprehensive project [README.md](../README.md) in the workspace root detailing setup and deployment.
+   - Message: `docs: add comprehensive project README.md`
 
 ---
 
@@ -92,6 +95,7 @@ We added and committed all changes using the Git Commit Version skill helper scr
 
 | Hash | Message |
 |------|---------|
+| `0d55f3d` | `docs: add comprehensive project README.md` |
 | `50847ad` | `feat: add mock plant images to test_content_assets` |
 | `46599a3` | `fix: resolve Cloud Run moisture calculation imports and plant edit form url validation` |
 | `53db088` | `feat: support local image upload via Base64 with canvas resizing` |
@@ -107,3 +111,4 @@ We added and committed all changes using the Git Commit Version skill helper scr
 | 2026-06-27 | Antigravity | Initial creation of Log 9 covering Cloud Run deployment and IAM role bindings. |
 | 2026-06-27 | Antigravity | Updated Log 9 to document local image upload, moisture calculation path fixes, and form validation fixes. |
 | 2026-06-27 | Antigravity | Added test content assets commit documentation. |
+| 2026-06-27 | Antigravity | Documented final project README.md creation and git commit. |
