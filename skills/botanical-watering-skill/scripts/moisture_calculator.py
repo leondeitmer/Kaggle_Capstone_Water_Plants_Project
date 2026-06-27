@@ -20,19 +20,19 @@ def get_category_data(species_name, db):
     """Finds the matching category in the plant database."""
     categories = db.get("categories", [])
     
-    # Map English UI species names to German database IDs
+    # Map English UI species names to English database IDs
     mapping = {
-        "water-loving herbs": "kraeuter_wasserliebend",
-        "mediterranean herbs": "kraeuter_mediterran",
-        "succulents & cacti": "sukkulenten_kakteen",
-        "thirsty flowers": "bluehpflanzen_durstig",
-        "normal flowers": "bluehpflanzen_normal",
-        "thirsty vegetables": "gemuese_durstig",
-        "normal vegetables": "gemuese_normal",
-        "fruits & berries": "obst_beeren",
-        "mediterranean container plants": "kuebelpflanzen_mediterran",
-        "climbing plants & ivy": "kletterpflanzen_efeu",
-        "shade plants": "gruenpflanzen_schattig"
+        "water-loving herbs": "herbs_water_loving",
+        "mediterranean herbs": "herbs_mediterranean",
+        "succulents & cacti": "succulents_cacti",
+        "thirsty flowers": "flowering_plants_thirsty",
+        "normal flowers": "flowering_plants_normal",
+        "thirsty vegetables": "vegetables_thirsty",
+        "normal vegetables": "vegetables_normal",
+        "fruits & berries": "fruits_berries",
+        "mediterranean container plants": "container_plants_mediterranean",
+        "climbing plants & ivy": "climbing_plants_ivy",
+        "shade plants": "foliage_plants_shade_loving"
     }
     
     mapped_id = mapping.get(species_name.lower())

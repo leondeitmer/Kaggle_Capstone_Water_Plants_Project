@@ -1,77 +1,77 @@
 {
   "categories": [
     {
-      "id": "kraeuter_wasserliebend",
+      "id": "herbs_water_loving",
       "name": "Herbs (Water-loving)",
       "description": "Water-loving, delicate herbs such as basil, mint, parsley, chives, dill, or coriander.",
       "base_depletion_pct": 18,
       "optimal_sun_hours": 5
     },
     {
-      "id": "kraeuter_mediterran",
+      "id": "herbs_mediterranean",
       "name": "Herbs (Mediterranean)",
       "description": "Robust, sun-loving Mediterranean herbs such as rosemary, thyme, sage, oregano, marjoram, or lavender.",
       "base_depletion_pct": 6,
       "optimal_sun_hours": 7
     },
     {
-      "id": "sukkulenten_kakteen",
+      "id": "succulents_cacti",
       "name": "Succulents & Cacti",
       "description": "Drought-resistant plants with water storage capability, such as aloe vera, houseleek, echeverias, or cacti.",
       "base_depletion_pct": 3,
       "optimal_sun_hours": 6
     },
     {
-      "id": "bluehpflanzen_durstig",
+      "id": "flowering_plants_thirsty",
       "name": "Flowering Plants (Thirsty)",
       "description": "Profusely blooming, water-intensive balcony flowers such as hydrangeas, petunias, fuchsias, lantanas, calibrachoa, or lobelia.",
       "base_depletion_pct": 20,
       "optimal_sun_hours": 5
     },
     {
-      "id": "bluehpflanzen_normal",
+      "id": "flowering_plants_normal",
       "name": "Flowering Plants (Normal)",
       "description": "Classic balcony flowers with moderate water needs such as geraniums, marguerites, begonias, pansies, bellflowers, or forget-me-nots.",
       "base_depletion_pct": 11,
       "optimal_sun_hours": 5
     },
     {
-      "id": "gemuese_durstig",
+      "id": "vegetables_thirsty",
       "name": "Vegetables (Thirsty)",
       "description": "Water-intensive vegetable plants with large foliage such as tomatoes, cucumbers, or zucchini.",
       "base_depletion_pct": 18,
       "optimal_sun_hours": 7
     },
     {
-      "id": "gemuese_normal",
+      "id": "vegetables_normal",
       "name": "Vegetables (Normal)",
       "description": "Vegetable plants with moderate water needs such as chili, bell peppers, radishes, or lettuce.",
       "base_depletion_pct": 12,
       "optimal_sun_hours": 6
     },
     {
-      "id": "obst_beeren",
+      "id": "fruits_berries",
       "name": "Fruits & Berries",
       "description": "Berry bushes and fruit plants for the balcony such as strawberries, blueberries, raspberries, or physalis.",
       "base_depletion_pct": 14,
       "optimal_sun_hours": 6
     },
     {
-      "id": "kuebelpflanzen_mediterran",
+      "id": "container_plants_mediterranean",
       "name": "Container Plants (Mediterranean)",
       "description": "Woody container plants with good drought protection such as olive trees, lemon trees, oleander, or fig trees.",
       "base_depletion_pct": 8,
       "optimal_sun_hours": 7
     },
     {
-      "id": "kletterpflanzen_efeu",
+      "id": "climbing_plants_ivy",
       "name": "Climbing Plants & Ivy",
       "description": "Climbing plants or ground cover such as ivy, wild grape, honeysuckle, or clematis.",
       "base_depletion_pct": 8,
       "optimal_sun_hours": 4
     },
     {
-      "id": "gruenpflanzen_schattig",
+      "id": "foliage_plants_shade_loving",
       "name": "Foliage Plants (Shade-loving)",
       "description": "Shade-loving foliage plants such as ferns, hostas, or ornamental grasses.",
       "base_depletion_pct": 12,
