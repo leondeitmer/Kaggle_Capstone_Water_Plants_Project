@@ -30,11 +30,11 @@ except Exception:
     project_id = None
 
 if project_id:
-    os.environ["GOOGLE_CLOUD_PROJECT"] = project_id
-    os.environ["GOOGLE_CLOUD_LOCATION"] = "global"
-    os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "True"
+    os.environ.setdefault("GOOGLE_CLOUD_PROJECT", project_id)
+    os.environ.setdefault("GOOGLE_CLOUD_LOCATION", "us-east1")
+    os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "True")
 else:
-    os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "False"
+    os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "False")
 
 
 def get_weather(query: str) -> str:
