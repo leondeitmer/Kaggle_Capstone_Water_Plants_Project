@@ -52,29 +52,29 @@ _Capstone_Project/
 
 ### 1. Environment Configuration
 
-Create a `.env` file in the project root with the following parameters:
+For local development using the standard Gemini backend, create a `.env` file in the project root (based on `.env.example`) and add your Gemini API Key:
 
 ```env
-GOOGLE_CLOUD_PROJECT="<YOUR_GCP_PROJECT_ID>"
-GOOGLE_CLOUD_LOCATION="<YOUR_GCP_REGION>"
-AGENT_RUNTIME_ID="projects/<YOUR_GCP_PROJECT_NUMBER>/locations/<YOUR_GCP_REGION>/reasoningEngines/<YOUR_REASONING_ENGINE_ID>"
+GEMINI_API_KEY="your_gemini_api_key_here"
 ```
 
 ### 1.1 Coupling with Your Own Google Cloud Project
 
-To connect this application to your own Google Cloud infrastructure and Vertex AI reasoning engine, review the following key configuration points:
+To connect this application to your own Google Cloud infrastructure and Vertex AI reasoning engine, you do **not** need to add GCP variables to your local `.env`. Instead, configure them using one of the following methods:
 
 * **Production Frontend ([submission_frontend/main.py](submission_frontend/main.py)):**
-  The FastAPI server in `submission_frontend/main.py` (lines 49-51) initializes Vertex AI and loads the reasoning engine. By default, it reads from environment variables. Ensure these environment variables are set in your local `.env` or passed during your Cloud Run deployment:
-  * `GOOGLE_CLOUD_PROJECT`: Your GCP Project ID.
-  * `GOOGLE_CLOUD_LOCATION`: The GCP Region (e.g., `us-east1`).
-  * `AGENT_RUNTIME_ID`: The full resource name of your deployed Vertex AI reasoning engine (e.g., `projects/<project-number>/locations/<region>/reasoningEngines/<engine-id>`).
+  The FastAPI server in `submission_frontend/main.py` (lines 49-51) contains fallback default strings for project configurations. To couple the app with your GCP project:
+  * **Option A (Code Edit):** Modify the fallback default values directly in `submission_frontend/main.py` (lines 49-51) with your project-specific details:
+    * `PROJECT_ID`: Your GCP Project ID.
+    * `LOCATION`: The GCP Region (e.g., `us-east1`).
+    * `AGENT_RUNTIME_ID`: The resource name of your deployed reasoning engine.
+  * **Option B (Deployment Configuration):** Pass them as environment variables during your Cloud Run deployment (using `--set-env-vars="GOOGLE_CLOUD_PROJECT=...,AGENT_RUNTIME_ID=..."` as shown in the deployment section below).
 
 * **Reasoning Engine Agent ([floracast-agent/app/agent.py](floracast-agent/app/agent.py)):**
   If you are deploying your own agent via `agents-cli`, the default project and location fallbacks are set in `floracast-agent/app/agent.py` (lines 33-35). Ensure they match your target GCP project configuration.
 
 * **Local Development Backend ([backend/main.py](backend/main.py)):**
-  If you are running the local FastAPI development server (which uses standard Gemini models instead of the deployed Reasoning Engine), configure your Gemini API Key in your `.env` file (`GEMINI_API_KEY`). The server checks for this key in `backend/main.py` (lines 47-52).
+  The local FastAPI backend server (which uses standard Gemini models from AI Studio rather than the deployed GCP Reasoning Engine) only requires the `GEMINI_API_KEY` in your local `.env` file. It verifies this key in `backend/main.py` (lines 47-52).
 
 ### 2. Running the Presentation Frontend Locally
 
