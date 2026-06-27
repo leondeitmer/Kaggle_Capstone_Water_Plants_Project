@@ -91,6 +91,9 @@ We added and committed all changes using the Git Commit Version skill helper scr
 6. **Commit 6 (GCP Security Checklist Documentation):**
    - Updated the safety check checklists and documentation to include GCP service account keys, API keys, and configurations.
    - Message: `docs: document GCP credentials and template checks in safety skills`
+7. **Commit 7 (GCP Coupling Documentation):**
+   - Added coupling instructions for custom Google Cloud projects in the project README.md.
+   - Message: `docs: add Google Cloud coupling section to README.md`
 
 ---
 
@@ -98,6 +101,7 @@ We added and committed all changes using the Git Commit Version skill helper scr
 
 | Hash | Message |
 |------|---------|
+| `de666eb` | `docs: add Google Cloud coupling section to README.md` |
 | `d4d49e9` | `docs: document GCP credentials and template checks in safety skills` |
 | `0d55f3d` | `docs: add comprehensive project README.md` |
 | `50847ad` | `feat: add mock plant images to test_content_assets` |
@@ -117,3 +121,4 @@ We added and committed all changes using the Git Commit Version skill helper scr
 | 2026-06-27 | Antigravity | Added test content assets commit documentation. |
 | 2026-06-27 | Antigravity | Documented final project README.md creation and git commit. |
 | 2026-06-27 | Antigravity | Documented GCP credentials and templates checks in skills. |
+| 2026-06-27 | Antigravity | Documented Google Cloud coupling steps in README.md. |
