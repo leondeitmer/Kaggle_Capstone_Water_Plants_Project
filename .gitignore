@@ -25,6 +25,10 @@ htmlcov/
 .env.test.local
 .env.production.local
 
+#Terminal deployment
+PS_Deploy_Command.txt
+PS_Deploy_Command.md
+
 # IDE and System files
 .vscode/
 .idea/
