@@ -43,7 +43,7 @@ body {
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
-  padding: 0.75rem 1.5rem 2rem 1.5rem;
+  padding: 0.5rem 1.5rem 1.0rem 1.5rem;
 }
 
 /* Background Blobs */
@@ -86,8 +86,8 @@ body {
   justify-content: center;
   flex-wrap: wrap;
   gap: 1.5rem;
-  margin-top: 0.25rem;
-  margin-bottom: 1.25rem;
+  margin-top: 0.1rem;
+  margin-bottom: 0.6rem;
 }
 .logo {
   display: flex;
@@ -124,14 +124,14 @@ body {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.9rem;
 }
 
 /* Top Row: 3 Widgets */
 .top-row {
   display: grid;
   grid-template-columns: 1fr 1.2fr 1fr;
-  gap: 1.5rem;
+  gap: 1.0rem;
 }
 @media (max-width: 950px) {
   .top-row {
@@ -166,17 +166,18 @@ section h3 {
 /* Balcony Widget Info */
 .balcony-info-grid {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.75rem 1rem;
   margin-bottom: 0.25rem;
 }
 .balcony-info-grid .label {
-  font-size: max(12px, 0.75rem);
+  font-size: max(12px, 1.0rem);
   color: var(--text-secondary);
 }
 .balcony-info-grid .val {
   font-weight: 600;
-  font-size: max(12px, 0.85rem);
+  font-size: max(12px, 1.0rem);
   color: #ffffff;
   float: none;
 }
@@ -276,15 +277,11 @@ section h3 {
   margin-bottom: 1rem;
 }
 .plants-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
-  gap: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.0rem;
   justify-content: center;
-}
-@media (min-width: 1200px) {
-  .plants-grid {
-    grid-template-columns: repeat(auto-fit, minmax(245px, 280px));
-  }
+  width: 100%;
 }
 
 .no-plants-placeholder {
@@ -308,6 +305,8 @@ section h3 {
 .plant-card {
   display: flex;
   flex-direction: column;
+  width: 248px;
+  max-width: 100%;
   padding: 0;
   overflow: hidden;
   border-radius: 11px;
@@ -321,7 +320,7 @@ section h3 {
 .plant-card-img {
   background-size: cover;
   background-position: center;
-  height: 170px;
+  height: 154px;
   width: 100%;
 }
 .plant-card-img.logo-img {
@@ -354,12 +353,12 @@ section h3 {
   text-overflow: ellipsis;
 }
 .plant-category {
-  font-size: max(12px, 0.8rem);
+  font-size: max(12px, 1.0rem);
   color: var(--primary);
   font-weight: 500;
 }
 .plant-meta {
-  font-size: max(12px, 0.8rem);
+  font-size: max(12px, 1.0rem);
   color: var(--text-secondary);
 }
 .plant-moisture-bar {
@@ -540,19 +539,22 @@ select option {
 }
 .checkbox-group {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
 }
 .checkbox-group input[type="checkbox"] {
-  width: 1rem;
-  height: 1rem;
+  width: 1.15rem;
+  height: 1.15rem;
   accent-color: var(--primary);
   cursor: pointer;
 }
 .checkbox-group label {
   cursor: pointer;
   user-select: none;
-  font-size: 0.85rem;
+  font-size: max(12px, 1.0rem);
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .form-actions {

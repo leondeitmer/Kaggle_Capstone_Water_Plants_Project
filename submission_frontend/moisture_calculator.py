@@ -72,6 +72,7 @@ def calculate_plant_moisture(plant: dict, balcony_config: dict, weather_data: di
     last_watered_str = plant.get("lastWatered")
     plant_sun = plant.get("sunHours", balcony_config.get("defaultSunHours", 5))
     is_covered = balcony_config.get("isCovered", False)
+    rain_exposure = plant.get("rainExposure", False)
     
     now = datetime.now(timezone.utc)
     
@@ -118,9 +119,9 @@ def calculate_plant_moisture(plant: dict, balcony_config: dict, weather_data: di
         # 3. Humidity Factor (F_humidity = 1.5 - Humidity / 100.0)
         f_humidity = 1.5 - (h_mean / 100.0)
         
-        # 4. Rain Bonus (adds moisture if balcony is open)
+        # 4. Rain Bonus (adds moisture if balcony is open and plant is not rain sheltered)
         rain_bonus = 0.0
-        if not is_covered and rain_mm > 0:
+        if not is_covered and not rain_exposure and rain_mm > 0:
             rain_bonus = rain_mm * 15.0  # 1mm rain = +15% moisture
             
         # Calculate daily depletion

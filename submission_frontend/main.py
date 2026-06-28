@@ -128,7 +128,8 @@ async def analyze_plant(
     species: str,
     last_watered: str,
     sun_hours: float,
-    is_covered: bool
+    is_covered: bool,
+    rain_exposure: bool = False
 ):
     """Sends plant data to the deployed Agent Runtime and parses the recommendation."""
     if not agent_engine:
@@ -240,7 +241,8 @@ async def analyze_plant(
             "id": "temp-plant-id",
             "species": species,
             "lastWatered": last_watered,
-            "sunHours": sun_hours
+            "sunHours": sun_hours,
+            "rainExposure": rain_exposure
         }
         calc_res = calculate_plant_moisture(plant_dict, balcony_config, weather_data)
         moisture_level = calc_res.get("moisture_level", 50)
@@ -265,6 +267,7 @@ async def analyze_plant(
     - Next Watering Date: {next_watering_date}
     - Location: {city}, {country}
     - Balcony Type: {"Covered" if is_covered else "Open"}
+    - Rain Exposure: {"Sheltered (Rain is ignored/does not reach plant)" if rain_exposure else "Exposed (Receives rain if balcony is open)"}
     - Actual Daily Sun Hours: {sun_hours}
     - Recent Weather Summary: {weather_summary}
     
@@ -272,7 +275,7 @@ async def analyze_plant(
     - Cite the calculated moisture level ({moisture_level}%).
     - Cite the location and recent weather conditions (e.g. mean temperature {round(avg_temp_recent, 1)}°C, total rain {round(sum_rain_recent, 1)}mm).
     - Cite if the actual daily sun hours ({sun_hours} hrs/day) deviate from the optimal sun hours for this plant category.
-    - Cite if the balcony type ({ "covered" if is_covered else "open" }) and rain had an impact.
+    - Cite if the balcony type ({ "covered" if is_covered else "open" }), plant rain exposure ({"sheltered" if rain_exposure else "exposed"}), and rain had an impact.
 
     Return your output STRICTLY as a JSON object with the following keys (no markdown wrapping, no extra text, just raw JSON):
     {{
