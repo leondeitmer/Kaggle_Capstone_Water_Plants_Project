@@ -1,6 +1,9 @@
 /* CSS Reset & Variables */
 html {
   font-size: 80%;
+  /* Background on html prevents white stripe when scrolling past viewport on mobile */
+  background: linear-gradient(135deg, #0f1a0d, #072a3b);
+  background-attachment: fixed;
 }
 :root {
   --font-main: 'Inter', sans-serif;
@@ -36,11 +39,11 @@ html {
 }
 
 body {
-  background: linear-gradient(135deg, #0f1a0d, #072a3b);
-  background-attachment: fixed;
+  background: transparent;
   color: var(--text-primary);
   font-family: var(--font-main);
   min-height: 100vh;
+  min-height: 100dvh;  /* Use dynamic viewport height on mobile to avoid gaps */
   position: relative;
   overflow-x: hidden;
   padding: 0.5rem 1.5rem 1.0rem 1.5rem;
@@ -267,6 +270,23 @@ section h3 {
   justify-content: flex-end;
   gap: 0.75rem;
   align-items: center;
+  flex-wrap: wrap;
+}
+@media (max-width: 640px) {
+  .action-row {
+    gap: 0.5rem;
+    justify-content: center;
+  }
+  .action-row .backup-actions {
+    flex: 1 1 100%;
+    justify-content: center;
+    margin-right: 0 !important;
+  }
+  .action-row .backup-actions .btn,
+  .action-row .btn-primary,
+  .action-row .btn-accent {
+    flex: 1 1 auto;
+  }
 }
 
 /* Plants Inventory Grid */
