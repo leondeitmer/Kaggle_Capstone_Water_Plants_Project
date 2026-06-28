@@ -205,10 +205,18 @@ function renderPlants() {
           </div>
         </div>
         
-        <div class="ai-prediction-box" title="AI Analysis Explanation">
-          ${plant.explanation || "No analysis run yet. Start the AI analysis."}
-          ${plant.watering_tips ? `<div class="ai-watering-tips" style="margin-top: 6px; font-size: 0.72rem; color: #a5f3fc; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px;"><i class="fa-solid fa-lightbulb"></i> <strong>Tip:</strong> ${plant.watering_tips}</div>` : ""}
-        </div>
+        <details class="plant-explanation-details">
+          <summary><i class="fa-solid fa-circle-info"></i> AI Explanation</summary>
+          <div class="ai-prediction-box">
+            ${plant.explanation || "No analysis run yet. Start the AI analysis."}
+          </div>
+        </details>
+        ${plant.watering_tips ? `
+        <details class="plant-tips-details">
+          <summary><i class="fa-solid fa-lightbulb"></i> AI Watering Tip</summary>
+          <div class="plant-watering-tip">${plant.watering_tips}</div>
+        </details>
+        ` : ""}
         
         <div class="card-footer">
           <button class="btn btn-water btn-action-water" data-id="${plant.id}">
