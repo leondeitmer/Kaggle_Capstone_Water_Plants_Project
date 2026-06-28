@@ -1,6 +1,6 @@
 import './style.css';
 
-// Default mock plants to pre-fill the application if empty (so the user gets a "wow" first experience!)
+// Default Data
 const DEFAULT_PLANTS = [
   {
     id: "default-1",
@@ -9,413 +9,387 @@ const DEFAULT_PLANTS = [
     lastWatered: new Date().toISOString(),
     sunHours: 0.0,
     imageUrl: "/img/App_Logo.svg",
-    description: "An example of a water-loving herb plant.",
+    description: "An example water-loving herb plant.",
     moisture_level: 100,
     status: "Healthy",
     next_watering_date: new Date().toISOString().split('T')[0],
     explanation: "The plant was watered today and is fully hydrated.",
-    watering_tips: "The soil is moist. No watering needed for now."
+    watering_tips: "The soil is moist. No watering needed for now.",
+    rainExposure: false
   }
 ];
 
 const DEFAULT_BALCONY = {
   city: "Berlin",
+  country: "Germany",
   zipCode: "10967",
   defaultSunHours: 5.0,
   isCovered: false
 };
 
-// Fallback Unsplash Image when user leaves image blank
-const FALLBACK_PLANT_IMAGE = "https://images.unsplash.com/photo-1545241047-6083a3684587?w=300&auto=format&fit=crop&q=80";
+// API style detection:
+// - If running on port 8000 or port 5173 (Vite dev server), we query http://localhost:8000 using batch POST.
+// - Else (port 8001 or deployed domain), we query relative using individual GET requests.
+const isLocalBackend = window.location.port === "8000" || window.location.port === "5173";
+const apiBase = isLocalBackend ? "http://localhost:8000" : "";
 
-// State
+let currentUploadedImageDataUrl = "";
+
+// App State (load from florawave keys, fallback to floracast keys)
 let state = {
-  balcony: { ...DEFAULT_BALCONY },
-  plants: []
+  plants: JSON.parse(localStorage.getItem("florawave_plants")) || JSON.parse(localStorage.getItem("floracast_plants")) || DEFAULT_PLANTS,
+  balcony: JSON.parse(localStorage.getItem("florawave_balcony")) || JSON.parse(localStorage.getItem("floracast_balcony")) || DEFAULT_BALCONY
 };
 
 // DOM Elements
-const elDisplayLocation = document.getElementById("display-location");
-const elDisplaySun = document.getElementById("display-sun");
-const elDisplayCovered = document.getElementById("display-covered");
-const elPlantCount = document.getElementById("plant-count");
-const elPlantsGrid = document.getElementById("plants-grid");
-const elLoadingOverlay = document.getElementById("loading-overlay");
-const elLoadingText = document.getElementById("loading-text");
+const plantsGrid = document.getElementById("plants-grid");
+const plantCount = document.getElementById("plant-count");
+
+const displayLocation = document.getElementById("display-location");
+const displaySun = document.getElementById("display-sun");
+const displayCovered = document.getElementById("display-covered");
+const displayBalconyRain = document.getElementById("display-balcony-rain");
+
+const modalPlant = document.getElementById("modal-plant");
+const modalBalcony = document.getElementById("modal-balcony");
+const loadingOverlay = document.getElementById("loading-overlay");
+const loadingText = document.getElementById("loading-text");
+
+const weatherWidget = document.getElementById("weather-widget");
+const thirstyContainer = document.getElementById("thirsty-container");
+const thirstyHeading = document.getElementById("thirsty-heading");
 
 // Buttons & Actions
-const btnEditBalcony = document.getElementById("btn-edit-balcony");
 const btnAddPlant = document.getElementById("btn-add-plant");
-const btnAnalyze = document.getElementById("btn-analyze");
+const btnEditBalcony = document.getElementById("btn-edit-balcony");
+const btnResetDefaults = document.getElementById("btn-reset-defaults");
+const btnAnalyzeAll = document.getElementById("btn-analyze-all");
+
 const btnBackupExport = document.getElementById("btn-backup-export");
 const btnBackupImport = document.getElementById("btn-backup-import");
 const backupFileInput = document.getElementById("backup-file-input");
 
-// Modals
-const modalPlant = document.getElementById("modal-plant");
-const modalBalcony = document.getElementById("modal-balcony");
-
-// Forms
-const formPlant = document.getElementById("form-plant");
-const formBalcony = document.getElementById("form-balcony");
-
 // Close buttons
-const closePlantModal = document.getElementById("close-modal-plant");
-const closeBalconyModal = document.getElementById("close-modal-balcony");
+const closePlant = document.getElementById("close-modal-plant");
+const closeBalcony = document.getElementById("close-modal-balcony");
 const btnCancelPlant = document.getElementById("btn-cancel-plant");
 const btnCancelBalcony = document.getElementById("btn-cancel-balcony");
 
-// Form inputs
-const fPlantId = document.getElementById("field-plant-id");
-const fPlantName = document.getElementById("field-plant-name");
-const fPlantSpecies = document.getElementById("field-plant-species");
-const fPlantSun = document.getElementById("field-plant-sun");
-const fPlantLastWatered = document.getElementById("field-plant-last-watered");
-const fPlantImage = document.getElementById("field-plant-image");
-const fPlantDesc = document.getElementById("field-plant-desc");
+// Form elements
+const formPlant = document.getElementById("form-plant");
+const formBalcony = document.getElementById("form-balcony");
 
-const fBalconyCity = document.getElementById("field-balcony-city");
-const fBalconyZip = document.getElementById("field-balcony-zip");
-const fBalconySun = document.getElementById("field-balcony-sun");
-const fBalconyCovered = document.getElementById("field-balcony-covered");
+const fieldPlantFile = document.getElementById("field-plant-file");
+const fieldPlantImage = document.getElementById("field-plant-image");
+const imagePreviewGroup = document.getElementById("image-preview-group");
+const imagePreviewImg = document.getElementById("image-preview-img");
+const btnRemoveImage = document.getElementById("btn-remove-image");
 
-// Helper: Load data from LocalStorage
-function loadState() {
-  const storedBalcony = localStorage.getItem("floracast_balcony");
-  const storedPlants = localStorage.getItem("floracast_plants");
-
-  if (storedBalcony) {
-    state.balcony = JSON.parse(storedBalcony);
-  } else {
-    localStorage.setItem("floracast_balcony", JSON.stringify(state.balcony));
-  }
-
-  if (storedPlants) {
-    state.plants = JSON.parse(storedPlants);
-  } else {
-    state.plants = [...DEFAULT_PLANTS];
-    localStorage.setItem("floracast_plants", JSON.stringify(state.plants));
-  }
-}
-
-// Helper: Save state to LocalStorage
+// Save to localStorage
 function saveState() {
-  localStorage.setItem("floracast_balcony", JSON.stringify(state.balcony));
+  localStorage.setItem("florawave_plants", JSON.stringify(state.plants));
+  localStorage.setItem("florawave_balcony", JSON.stringify(state.balcony));
+  // Keep floracast key in sync for backwards compatibility
   localStorage.setItem("floracast_plants", JSON.stringify(state.plants));
+  localStorage.setItem("floracast_balcony", JSON.stringify(state.balcony));
 }
 
-// UI Update: Render Balcony Summary
-function updateBalconyUI() {
-  elDisplayLocation.textContent = `${state.balcony.city} (${state.balcony.zipCode})`;
-  elDisplaySun.textContent = `${state.balcony.defaultSunHours} hrs/day`;
-  elDisplayCovered.innerHTML = state.balcony.isCovered
-    ? '<span class="status-yes"><i class="fa-solid fa-circle-check"></i> Yes</span>'
-    : '<span class="status-no"><i class="fa-solid fa-circle-xmark"></i> No</span>';
+// Render Balcony Info
+function renderBalcony() {
+  displayLocation.textContent = `${state.balcony.city}, ${state.balcony.country || 'Germany'} (${state.balcony.zipCode})`;
+  displaySun.textContent = `${state.balcony.defaultSunHours} hrs/day`;
+  displayCovered.textContent = state.balcony.isCovered ? "Covered" : "Open";
+  displayBalconyRain.textContent = state.balcony.isCovered ? "no" : "yes";
 }
 
-// Helper: Calculate days between dates
-function getDaysSince(isoDateString) {
-  const date = new Date(isoDateString);
-  const now = new Date();
-  const diffTime = Math.abs(now - date);
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) {
-    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-    if (diffHours === 0) return "Just now";
-    return `${diffHours} hrs ago`;
-  }
-  return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-}
-
-// UI Update: Render Plant Cards
+// Render Plant Cards
 function renderPlants() {
-  elPlantCount.textContent = state.plants.length;
-  elPlantsGrid.innerHTML = "";
+  plantCount.textContent = state.plants.length;
 
   if (state.plants.length === 0) {
-    elPlantsGrid.innerHTML = `
+    plantsGrid.innerHTML = `
       <div class="no-plants-placeholder">
         <i class="fa-solid fa-seedling"></i>
-        <p>No plants added yet. Add your first plant!</p>
+        <p>No plants added yet. Click 'Add Plant' to start your inventory!</p>
       </div>
     `;
     return;
   }
 
-  state.plants.forEach(plant => {
-    // Determine card status styling
-    let statusClass = "status-healthy";
-    let statusLabel = "HEALTHY";
-    let statusBadgeClass = "healthy";
+  plantsGrid.innerHTML = state.plants.map(plant => {
+    const defaultImg = "/img/App_Logo.svg";
+    const imgUrl = plant.imageUrl || defaultImg;
+    const isLogo = imgUrl === defaultImg || imgUrl.includes("App_Logo.svg");
+    const logoClass = isLogo ? "logo-img" : "";
 
-    if (plant.status === "Water Now") {
-      statusClass = "status-now";
-      statusLabel = "NOW!";
-      statusBadgeClass = "now";
-    } else if (plant.status === "Water Soon") {
-      statusClass = "status-soon";
-      statusLabel = "SOON";
-      statusBadgeClass = "soon";
+    let lastWateredDate = "Unknown";
+    if (plant.lastWatered) {
+      try {
+        lastWateredDate = new Date(plant.lastWatered).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
+      } catch (e) {}
     }
 
-    const card = document.createElement("div");
-    card.className = `plant-card glass ${statusClass}`;
-    card.id = `plant-${plant.id}`;
+    const moisture = plant.moisture_level !== undefined ? `${plant.moisture_level}%` : "Not analyzed";
+    const status = plant.status || "Healthy";
+    const statusClass = status.toLowerCase().replace(" ", "-");
 
-    // Format next watering date nicely
-    let formattedNextWatering = "-";
-    if (plant.next_watering_date) {
-      const nextDate = new Date(plant.next_watering_date);
-      formattedNextWatering = nextDate.toLocaleDateString("en-US", { day: '2-digit', month: '2-digit' });
-    }
+    return `
+      <div class="plant-card glass fade-in">
+        <div class="plant-card-img ${logoClass}" style="background-image: url('${imgUrl}')"></div>
+        <div class="plant-card-content">
+          <div class="plant-header">
+            <h4>${plant.name}</h4>
+            <span class="badge badge-${statusClass}">${status}</span>
+          </div>
+          <p class="plant-category"><i class="fa-solid fa-tag"></i> ${plant.species}</p>
+          <p class="plant-meta"><strong>Sun:</strong> ${plant.sunHours} hrs/day</p>
+          <p class="plant-meta"><strong>Last Watered:</strong> ${lastWateredDate}</p>
+          <p class="plant-meta"><strong>Rain Exposure:</strong> ${plant.rainExposure ? "Covered (Ignored)" : "Exposed"}</p>
+          
+          <div class="plant-moisture-bar">
+            <div class="moisture-label">Moisture: <strong>${moisture}</strong></div>
+            <div class="bar-bg">
+              <div class="bar-fill moisture-${statusClass}" style="width: ${plant.moisture_level || 0}%"></div>
+            </div>
+          </div>
 
-    const imgUrl = plant.imageUrl && plant.imageUrl.trim() !== "" ? plant.imageUrl : FALLBACK_PLANT_IMAGE;
-    const moistureVal = plant.moisture_level !== undefined ? `${plant.moisture_level}%` : "-";
+          ${plant.explanation ? `
+          <details class="plant-explanation-details">
+            <summary><i class="fa-solid fa-circle-info"></i> AI Explanation</summary>
+            <div class="plant-explanation">${plant.explanation}</div>
+          </details>
+          ` : ""}
+          ${plant.watering_tips ? `
+          <details class="plant-tips-details">
+            <summary><i class="fa-solid fa-lightbulb"></i> AI Watering Tip</summary>
+            <div class="plant-watering-tip">${plant.watering_tips}</div>
+          </details>
+          ` : ""}
+          ${plant.next_watering_date ? `<p class="plant-meta"><strong>Next Watering:</strong> ${plant.next_watering_date}</p>` : ""}
 
-    card.innerHTML = `
-      <div class="card-image-wrapper">
-        <img src="${imgUrl}" class="card-img" alt="${plant.name}" onerror="this.src='${FALLBACK_PLANT_IMAGE}';" />
-        <span class="status-badge ${statusBadgeClass}">${statusLabel}</span>
-        
-        <div class="moisture-droplet-badge" title="Bodenfeuchtigkeit">
-          <i class="fa-solid fa-droplet"></i>
-          <span>${moistureVal}</span>
-        </div>
-      </div>
-      
-      <div class="card-details">
-        <div class="plant-title">
-          <h3>${plant.name}</h3>
-          <span class="species">${plant.species || "Unknown Species"}</span>
-        </div>
-        
-        <div class="plant-stats">
-          <div class="stat-row">
-            <span class="stat-label">Watered:</span>
-            <span class="stat-val">${getDaysSince(plant.lastWatered)}</span>
+          <div class="plant-actions">
+            <button class="btn btn-secondary btn-xs btn-analyze-single" data-id="${plant.id}" title="Run AI analysis">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Analyze
+            </button>
+            <button class="btn btn-secondary btn-xs btn-edit-plant" data-id="${plant.id}" title="Edit plant values">
+              <i class="fa-solid fa-pen"></i> Edit
+            </button>
+            <button class="btn btn-secondary btn-xs btn-delete-plant" data-id="${plant.id}" title="Remove plant" style="background: rgba(239, 68, 68, 0.05); color: #ff5f5f; border-color: rgba(239, 68, 68, 0.2);">
+              <i class="fa-solid fa-trash"></i>
+            </button>
           </div>
-          <div class="stat-row">
-            <span class="stat-label">Sun/Day:</span>
-            <span class="stat-val">${plant.sunHours} hrs</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">Next Watering:</span>
-            <span class="stat-val" style="font-weight: 700;">${formattedNextWatering}</span>
-          </div>
-        </div>
-        
-        <details class="plant-explanation-details">
-          <summary><i class="fa-solid fa-circle-info"></i> AI Explanation</summary>
-          <div class="ai-prediction-box">
-            ${plant.explanation || "No analysis run yet. Start the AI analysis."}
-          </div>
-        </details>
-        ${plant.watering_tips ? `
-        <details class="plant-tips-details">
-          <summary><i class="fa-solid fa-lightbulb"></i> AI Watering Tip</summary>
-          <div class="plant-watering-tip">${plant.watering_tips}</div>
-        </details>
-        ` : ""}
-        
-        <div class="card-footer">
-          <button class="btn btn-water btn-action-water" data-id="${plant.id}">
-            <i class="fa-solid fa-bucket"></i> Watered
-          </button>
-          <button class="btn btn-icon-only btn-edit-plant-icon btn-action-edit" data-id="${plant.id}" title="Edit">
-            <i class="fa-solid fa-pen-to-square"></i>
-          </button>
-          <button class="btn btn-icon-only btn-action-delete" data-id="${plant.id}" title="Delete">
-            <i class="fa-solid fa-trash"></i>
-          </button>
         </div>
       </div>
     `;
-
-    // Attach Event Listeners to Card Buttons
-    card.querySelector(".btn-action-water").addEventListener("click", (e) => {
-      e.stopPropagation();
-      waterPlant(plant.id);
-    });
-
-    card.querySelector(".btn-action-edit").addEventListener("click", (e) => {
-      e.stopPropagation();
-      openEditPlantModal(plant.id);
-    });
-
-    card.querySelector(".btn-action-delete").addEventListener("click", (e) => {
-      e.stopPropagation();
-      deletePlant(plant.id);
-    });
-
-    elPlantsGrid.appendChild(card);
-  });
+  }).join("");
 }
 
-// Action: Water Plant (Resets lastWatered timestamp to now)
-function waterPlant(id) {
-  const plantIndex = state.plants.findIndex(p => p.id === id);
-  if (plantIndex !== -1) {
-    state.plants[plantIndex].lastWatered = new Date().toISOString();
-    state.plants[plantIndex].moisture_level = 100;
-    state.plants[plantIndex].status = "Healthy";
-    state.plants[plantIndex].explanation = "Freshly watered! The soil is fully saturated.";
-    state.plants[plantIndex].watering_tips = "";
-    saveState();
-    renderPlants();
-  }
-}
-
-// Action: Delete Plant
+// Delete Plant
 function deletePlant(id) {
-  const plant = state.plants.find(p => p.id === id);
-  if (plant && confirm(`Are you sure you want to remove the plant "${plant.name}"?`)) {
-    state.plants = state.plants.filter(p => p.id !== id);
+  if (confirm("Are you sure you want to remove this plant?")) {
+    state.plants = state.plants.filter(p => String(p.id) !== String(id));
     saveState();
     renderPlants();
+    updateThirstyPlants();
   }
 }
 
-// Modal: Open Add Plant
-function openAddPlantModal() {
-  fPlantId.value = "";
-  fPlantName.value = "";
-  fPlantSpecies.value = "";
-  fPlantSun.value = state.balcony.defaultSunHours; // Suggest balcony default
-
-  // Set default datetime-local to current local time
-  const now = new Date();
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  fPlantLastWatered.value = now.toISOString().slice(0, 16);
-
-  fPlantImage.value = "";
-  fPlantDesc.value = "";
-
-  document.getElementById("modal-plant-title").textContent = "Add New Plant";
-  modalPlant.classList.add("show");
-}
-
-// Modal: Open Edit Plant
+// Open Edit Plant Modal
 function openEditPlantModal(id) {
   const plant = state.plants.find(p => p.id === id);
   if (!plant) return;
 
-  fPlantId.value = plant.id;
-  fPlantName.value = plant.name;
-  fPlantSpecies.value = plant.species || "";
-  fPlantSun.value = plant.sunHours;
+  document.getElementById("field-plant-id").value = plant.id;
+  document.getElementById("field-plant-name").value = plant.name;
+  document.getElementById("field-plant-species").value = plant.species;
+  document.getElementById("field-plant-sun").value = plant.sunHours;
+  document.getElementById("field-plant-rain-exposure").checked = plant.rainExposure || false;
 
-  // Format ISO to local datetime string for input field
-  const date = new Date(plant.lastWatered);
-  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-  fPlantLastWatered.value = date.toISOString().slice(0, 16);
+  let dateVal = "";
+  if (plant.lastWatered) {
+    try {
+      dateVal = new Date(plant.lastWatered).toISOString().slice(0, 16);
+    } catch (e) {
+      dateVal = new Date().toISOString().slice(0, 16);
+    }
+  }
+  document.getElementById("field-plant-last-watered").value = dateVal;
 
-  fPlantImage.value = plant.imageUrl || "";
-  fPlantDesc.value = plant.description || "";
+  if (plant.imageUrl && plant.imageUrl.startsWith("data:")) {
+    document.getElementById("field-plant-image").value = "";
+    currentUploadedImageDataUrl = plant.imageUrl;
+    updateImagePreview(plant.imageUrl);
+  } else {
+    document.getElementById("field-plant-image").value = plant.imageUrl || "";
+    currentUploadedImageDataUrl = "";
+    updateImagePreview(plant.imageUrl || "");
+  }
+  document.getElementById("field-plant-file").value = "";
+  document.getElementById("field-plant-desc").value = plant.description || "";
 
-  document.getElementById("modal-plant-title").textContent = "Edit Plant";
+  document.getElementById("modal-plant-title").textContent = "Edit Plant Details";
   modalPlant.classList.add("show");
 }
 
-// Modal: Open Balcony Config
-function openBalconyModal() {
-  fBalconyCity.value = state.balcony.city;
-  fBalconyZip.value = state.balcony.zipCode;
-  fBalconySun.value = state.balcony.defaultSunHours;
-  fBalconyCovered.checked = state.balcony.isCovered;
-  modalBalcony.classList.add("show");
+// Fetch Weather details
+async function updateWeather() {
+  try {
+    const query = state.balcony.country ? `${state.balcony.city}, ${state.balcony.country}` : state.balcony.city;
+    const data = await fetchWeatherInfo(query);
+
+    weatherWidget.innerHTML = `
+      <h3><i class="fa-solid fa-cloud-sun"></i> Current Weather in ${data.city}</h3>
+      <div class="weather-grid">
+        <div class="weather-metric">
+          <span class="lbl">Temperature</span>
+          <span class="val">${data.temp_c} °C / ${data.temp_f} °F</span>
+        </div>
+        <div class="weather-metric">
+          <span class="lbl">Humidity</span>
+          <span class="val">${data.humidity}%</span>
+        </div>
+        <div class="weather-metric">
+          <span class="lbl">Precipitation</span>
+          <span class="val">${data.precipitation_mm} mm / ${data.precipitation_in} in</span>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    console.error("Weather load failed:", err);
+    weatherWidget.innerHTML = `
+      <h3><i class="fa-solid fa-triangle-exclamation"></i> Current Weather</h3>
+      <p class="error-msg">Could not load weather details for "${state.balcony.city}".</p>
+    `;
+  }
 }
 
-// Modal close triggers
-const closeModals = () => {
-  modalPlant.classList.remove("show");
-  modalBalcony.classList.remove("show");
-};
-
-closePlantModal.addEventListener("click", closeModals);
-closeBalconyModal.addEventListener("click", closeModals);
-btnCancelPlant.addEventListener("click", closeModals);
-btnCancelBalcony.addEventListener("click", closeModals);
-
-window.addEventListener("click", (e) => {
-  if (e.target === modalPlant || e.target === modalBalcony) {
-    closeModals();
-  }
-});
-
-// Submit: Plant Form
-formPlant.addEventListener("submit", (e) => {
-  e.preventDefault();
-
-  const id = fPlantId.value;
-  const name = fPlantName.value.trim();
-  const species = fPlantSpecies.value.trim();
-  const sunHours = parseFloat(fPlantSun.value);
-  const lastWatered = new Date(fPlantLastWatered.value).toISOString();
-  const imageUrl = fPlantImage.value.trim();
-  const description = fPlantDesc.value.trim();
-
-  if (id) {
-    // Edit existing plant
-    const index = state.plants.findIndex(p => p.id === id);
-    if (index !== -1) {
-      state.plants[index] = {
-        ...state.plants[index],
-        name,
-        species,
-        sunHours,
-        lastWatered,
-        imageUrl,
-        description
-      };
-    }
+// Fetch weather info dynamically (proxy vs direct Open-Meteo depending on backend mode)
+async function fetchWeatherInfo(city) {
+  if (!isLocalBackend) {
+    // Cloud Run Mode (FastAPI proxy)
+    const res = await fetch(`${apiBase}/api/weather/${encodeURIComponent(city)}`);
+    if (!res.ok) throw new Error("Weather fetch failed");
+    return await res.json();
   } else {
-    // Add new plant
-    const newPlant = {
-      id: "plant-" + Math.random().toString(36).substr(2, 9),
-      name,
-      species,
-      sunHours,
-      lastWatered,
-      imageUrl,
-      description,
-      moisture_level: undefined,
-      status: "Healthy",
-      next_watering_date: undefined,
-      explanation: undefined
+    // Local Backend Mode (Direct Open-Meteo fetch)
+    const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&format=json`;
+    const geoRes = await fetch(geoUrl);
+    if (!geoRes.ok) throw new Error("Geocoding failed");
+    const geoData = await geoRes.json();
+    if (!geoData.results || geoData.results.length === 0) {
+      throw new Error("City not found");
+    }
+    const location = geoData.results[0];
+    const lat = location.latitude;
+    const lon = location.longitude;
+    const displayName = `${location.name}, ${location.country || ''}`;
+
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation&timezone=auto`;
+    const weatherRes = await fetch(weatherUrl);
+    if (!weatherRes.ok) throw new Error("Weather forecast failed");
+    const weatherData = await weatherRes.json();
+    
+    const current = weatherData.current;
+    const temp_c = current.temperature_2m;
+    const temp_f = (temp_c * 9/5) + 32;
+    const precip_mm = current.precipitation;
+    const precip_in = precip_mm * 0.03937;
+    const humidity = current.relative_humidity_2m;
+
+    return {
+      city: displayName,
+      temp_c: Math.round(temp_c * 10) / 10,
+      temp_f: Math.round(temp_f * 10) / 10,
+      humidity: humidity,
+      precipitation_mm: Math.round(precip_mm * 100) / 100,
+      precipitation_in: Math.round(precip_in * 100) / 100
     };
-    state.plants.push(newPlant);
   }
+}
 
-  saveState();
-  renderPlants();
-  closeModals();
-});
+// Update Thirsty Plants Panel
+function updateThirstyPlants() {
+  const thirsty = state.plants.filter(p => p.status === "Water Now");
+  const total = state.plants.length;
 
-// Submit: Balcony Form
-formBalcony.addEventListener("submit", (e) => {
-  e.preventDefault();
-
-  state.balcony.city = fBalconyCity.value.trim();
-  state.balcony.zipCode = fBalconyZip.value.trim();
-  state.balcony.defaultSunHours = parseFloat(fBalconySun.value);
-  state.balcony.isCovered = fBalconyCovered.checked;
-
-  saveState();
-  updateBalconyUI();
-  closeModals();
-});
-
-// Action: Trigger AI Analysis
-async function triggerAIAnalysis() {
-  if (state.plants.length === 0) {
-    alert("Please add at least one plant to start the analysis.");
+  if (thirsty.length === 0) {
+    if (thirstyHeading) {
+      thirstyHeading.innerHTML = `<i class="fa-solid fa-droplet-slash"></i> ${total} ${total === 1 ? 'Plant' : 'Plants'} well hydrated`;
+    }
+    thirstyContainer.innerHTML = '<p class="empty-thirsty">All plants are well hydrated!</p>';
     return;
   }
 
-  // Show loading indicator
-  elLoadingText.textContent = `Fetching weather data for ${state.balcony.city}...`;
-  elLoadingOverlay.classList.add("show");
+  if (thirstyHeading) {
+    thirstyHeading.innerHTML = `<i class="fa-solid fa-droplet-slash"></i> ${thirsty.length} Thirsty ${thirsty.length === 1 ? 'Plant' : 'Plants'}`;
+  }
+
+  thirstyContainer.innerHTML = thirsty.map(p => {
+    const moisture = p.moisture_level !== undefined ? `${p.moisture_level}%` : "0%";
+    return `
+      <div class="thirsty-item">
+        <span class="thirsty-name"><i class="fa-solid fa-droplet animate-pulse"></i> ${p.name}</span>
+        <span class="thirsty-moisture">Moisture: ${moisture}</span>
+      </div>
+    `;
+  }).join("");
+}
+
+// Analyze Single Plant (individual GET call for gcloud)
+async function analyzeSinglePlant(id) {
+  const plant = state.plants.find(p => p.id === id);
+  if (!plant) return;
+
+  loadingOverlay.classList.add("show");
+  loadingText.textContent = `Analyzing ${plant.name} via Agent Runtime...`;
+
+  try {
+    const url = new URL(apiBase ? `${apiBase}/api/analyze` : '/api/analyze', window.location.origin);
+    url.searchParams.append("city", state.balcony.city);
+    url.searchParams.append("country", state.balcony.country || "Germany");
+    url.searchParams.append("plant_name", plant.name);
+    url.searchParams.append("species", plant.species);
+    url.searchParams.append("last_watered", plant.lastWatered);
+    url.searchParams.append("sun_hours", plant.sunHours);
+    url.searchParams.append("is_covered", state.balcony.isCovered);
+    url.searchParams.append("rain_exposure", plant.rainExposure || false);
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      const errBody = await res.json();
+      throw new Error(errBody.detail || "Agent execution failed");
+    }
+
+    const data = await res.json();
+    const analysis = data.analysis;
+
+    // Update plant details
+    plant.moisture_level = analysis.moisture_level;
+    plant.status = analysis.status;
+    plant.next_watering_date = analysis.next_watering_date;
+    plant.explanation = analysis.explanation;
+    plant.watering_tips = analysis.watering_tips;
+
+    saveState();
+    renderPlants();
+    updateThirstyPlants();
+
+  } catch (err) {
+    alert(`Analysis failed for ${plant.name}: ${err.message}`);
+  } finally {
+    loadingOverlay.classList.remove("show");
+  }
+}
+
+// Analyze All Plants in Batch (local POST request)
+async function analyzeAllPlantsBatch() {
+  if (state.plants.length === 0) {
+    alert("Please add at least one plant to run analyses.");
+    return;
+  }
+
+  loadingOverlay.classList.add("show");
+  loadingText.textContent = "AI agents evaluating soil moisture & water needs...";
 
   const requestBody = {
     balconyConfig: state.balcony,
@@ -426,18 +400,12 @@ async function triggerAIAnalysis() {
       lastWatered: p.lastWatered,
       sunHours: p.sunHours,
       imageUrl: p.imageUrl,
-      description: p.description
+      description: p.description,
+      rainExposure: p.rainExposure || false
     }))
   };
 
-  // Determine API base url (support local FastAPI port or relative in container)
-  const apiBase = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:8000"
-    : "";
-
   try {
-    elLoadingText.textContent = "AI agents evaluating soil moisture & water needs...";
-
     const response = await fetch(`${apiBase}/api/analyze`, {
       method: "POST",
       headers: {
@@ -468,32 +436,241 @@ async function triggerAIAnalysis() {
 
       saveState();
       renderPlants();
+      updateThirstyPlants();
     } else {
       throw new Error("Invalid analysis result received.");
     }
 
-  } catch (error) {
-    console.error("Analysis Error:", error);
-    alert(`Error during AI analysis: ${error.message}\n\nMake sure the FastAPI server is running (Port 8000) and the GEMINI_API_KEY is set.`);
+  } catch (err) {
+    alert(`Error during AI analysis: ${err.message}\n\nMake sure the FastAPI server is running (Port 8000) and the GEMINI_API_KEY is set.`);
   } finally {
-    elLoadingOverlay.classList.remove("show");
+    loadingOverlay.classList.remove("show");
   }
 }
 
-// Backup Functions
+// Run AI Analysis Trigger (Unified)
+btnAnalyzeAll.addEventListener("click", async () => {
+  if (state.plants.length === 0) {
+    alert("Please add at least one plant to run analyses.");
+    return;
+  }
+
+  if (isLocalBackend) {
+    // Local batch analysis
+    await analyzeAllPlantsBatch();
+  } else {
+    // Gcloud sequential individual analyses
+    for (const plant of state.plants) {
+      await analyzeSinglePlant(plant.id);
+    }
+  }
+});
+
+// Modals logic
+btnAddPlant.addEventListener("click", () => {
+  formPlant.reset();
+  document.getElementById("field-plant-id").value = "";
+  document.getElementById("field-plant-sun").value = state.balcony.defaultSunHours;
+  document.getElementById("field-plant-rain-exposure").checked = state.balcony.isCovered || false;
+
+  const dateInput = document.getElementById("field-plant-last-watered");
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  dateInput.value = oneDayAgo.toISOString().slice(0, 16);
+
+  currentUploadedImageDataUrl = "";
+  updateImagePreview("");
+  fieldPlantFile.value = "";
+
+  document.getElementById("modal-plant-title").textContent = "Add New Plant";
+  modalPlant.classList.add("show");
+});
+
+btnEditBalcony.addEventListener("click", () => {
+  document.getElementById("field-balcony-city").value = state.balcony.city;
+  document.getElementById("field-balcony-country").value = state.balcony.country || "Germany";
+  document.getElementById("field-balcony-zip").value = state.balcony.zipCode;
+  document.getElementById("field-balcony-sun").value = state.balcony.defaultSunHours;
+  document.getElementById("field-balcony-covered").checked = state.balcony.isCovered;
+  modalBalcony.classList.add("show");
+});
+
+function closeModal() {
+  modalPlant.classList.remove("show");
+  modalBalcony.classList.remove("show");
+}
+
+closePlant.addEventListener("click", closeModal);
+closeBalcony.addEventListener("click", closeModal);
+btnCancelPlant.addEventListener("click", closeModal);
+btnCancelBalcony.addEventListener("click", closeModal);
+window.addEventListener("click", (e) => {
+  if (e.target === modalPlant || e.target === modalBalcony) closeModal();
+});
+
+// Image Upload utilities
+function updateImagePreview(src) {
+  if (src) {
+    imagePreviewImg.src = src;
+    imagePreviewGroup.style.display = "block";
+  } else {
+    imagePreviewImg.src = "";
+    imagePreviewGroup.style.display = "none";
+  }
+}
+
+fieldPlantImage.addEventListener("input", () => {
+  const val = fieldPlantImage.value.trim();
+  if (val) {
+    currentUploadedImageDataUrl = ""; // URL takes precedence
+    updateImagePreview(val);
+  } else {
+    updateImagePreview(currentUploadedImageDataUrl);
+  }
+});
+
+fieldPlantFile.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (event) {
+    const img = new Image();
+    img.onload = function () {
+      const canvas = document.createElement("canvas");
+      const maxDim = 400;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > maxDim) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        }
+      } else {
+        if (height > maxDim) {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+
+      currentUploadedImageDataUrl = canvas.toDataURL("image/jpeg", 0.75);
+      fieldPlantImage.value = ""; // Clear URL if uploading file
+      updateImagePreview(currentUploadedImageDataUrl);
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+btnRemoveImage.addEventListener("click", () => {
+  currentUploadedImageDataUrl = "";
+  fieldPlantImage.value = "";
+  fieldPlantFile.value = "";
+  updateImagePreview("");
+});
+
+// Save Plant Form
+formPlant.addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const id = document.getElementById("field-plant-id").value || `plant-${Math.random().toString(36).substring(2, 9)}`;
+  const name = document.getElementById("field-plant-name").value.trim();
+  const species = document.getElementById("field-plant-species").value;
+  const sunHours = parseFloat(document.getElementById("field-plant-sun").value);
+  const lastWatered = new Date(document.getElementById("field-plant-last-watered").value).toISOString();
+  const description = document.getElementById("field-plant-desc").value.trim();
+  const rainExposure = document.getElementById("field-plant-rain-exposure").checked;
+
+  const urlInput = fieldPlantImage.value.trim();
+  const imageUrl = urlInput || currentUploadedImageDataUrl || "";
+
+  const existingIdx = state.plants.findIndex(p => p.id === id);
+
+  if (existingIdx !== -1) {
+    const oldPlant = state.plants[existingIdx];
+    state.plants[existingIdx] = {
+      ...oldPlant,
+      name,
+      species,
+      sunHours,
+      lastWatered,
+      imageUrl,
+      description,
+      rainExposure
+    };
+  } else {
+    const plantData = {
+      id,
+      name,
+      species,
+      sunHours,
+      lastWatered,
+      imageUrl,
+      description,
+      status: "Healthy",
+      moisture_level: undefined,
+      next_watering_date: undefined,
+      explanation: undefined,
+      rainExposure
+    };
+    state.plants.push(plantData);
+  }
+
+  saveState();
+  renderPlants();
+  updateThirstyPlants();
+  closeModal();
+});
+
+// Save Balcony Form
+formBalcony.addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  state.balcony.city = document.getElementById("field-balcony-city").value.trim();
+  state.balcony.country = document.getElementById("field-balcony-country").value.trim();
+  state.balcony.zipCode = document.getElementById("field-balcony-zip").value.trim();
+  state.balcony.defaultSunHours = parseFloat(document.getElementById("field-balcony-sun").value);
+  state.balcony.isCovered = document.getElementById("field-balcony-covered").checked;
+
+  saveState();
+  renderBalcony();
+  updateWeather();
+  closeModal();
+});
+
+// Reset Defaults
+btnResetDefaults.addEventListener("click", () => {
+  if (confirm("Reset balcony settings and plant inventory to original defaults? All local edits will be cleared.")) {
+    state.plants = DEFAULT_PLANTS;
+    state.balcony = DEFAULT_BALCONY;
+    saveState();
+    renderBalcony();
+    renderPlants();
+    updateWeather();
+    updateThirstyPlants();
+  }
+});
+
+// Backup Export
 btnBackupExport.addEventListener("click", () => {
   const backupData = JSON.stringify(state, null, 2);
   const blob = new Blob([backupData], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `floracast_backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `florawave_backup_${new Date().toISOString().split('T')[0]}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 });
 
+// Backup Import Trigger
 btnBackupImport.addEventListener("click", () => {
   backupFileInput.click();
 });
@@ -509,8 +686,10 @@ backupFileInput.addEventListener("change", (e) => {
       if (importedState.balcony && Array.isArray(importedState.plants)) {
         state = importedState;
         saveState();
-        updateBalconyUI();
+        renderBalcony();
         renderPlants();
+        updateWeather();
+        updateThirstyPlants();
         alert("Backup successfully imported!");
       } else {
         throw new Error("Invalid data structure.");
@@ -522,16 +701,30 @@ backupFileInput.addEventListener("change", (e) => {
   reader.readAsText(file);
 });
 
-// Event Bindings
-btnEditBalcony.addEventListener("click", openBalconyModal);
-btnAddPlant.addEventListener("click", openAddPlantModal);
-btnAnalyze.addEventListener("click", triggerAIAnalysis);
+// Plant card action buttons
+plantsGrid.addEventListener("click", (e) => {
+  const btnDelete = e.target.closest(".btn-delete-plant");
+  const btnAnalyze = e.target.closest(".btn-analyze-single");
+  const btnEdit = e.target.closest(".btn-edit-plant");
 
-// Initialization
+  if (btnDelete) {
+    const id = btnDelete.getAttribute("data-id");
+    deletePlant(id);
+  } else if (btnAnalyze) {
+    const id = btnAnalyze.getAttribute("data-id");
+    analyzeSinglePlant(id);
+  } else if (btnEdit) {
+    const id = btnEdit.getAttribute("data-id");
+    openEditPlantModal(id);
+  }
+});
+
+// Initial Setup
 function init() {
-  loadState();
-  updateBalconyUI();
+  renderBalcony();
   renderPlants();
+  updateWeather();
+  updateThirstyPlants();
 }
 
 window.addEventListener("DOMContentLoaded", init);

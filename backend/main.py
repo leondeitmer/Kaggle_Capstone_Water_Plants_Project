@@ -37,6 +37,7 @@ class PlantItem(BaseModel):
     sunHours: float
     imageUrl: str = ""
     description: str = ""
+    rainExposure: bool = False
 
 class AnalyzeRequest(BaseModel):
     balconyConfig: BalconyConfig
