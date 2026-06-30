@@ -350,46 +350,58 @@ async function analyzeSinglePlant(id) {
   loadingOverlay.classList.add("show");
   loadingText.textContent = `Analyzing ${plant.name} via Agent Runtime...`;
 
-  try {
-    const url = new URL(apiBase ? `${apiBase}/api/analyze` : '/api/analyze', window.location.origin);
-    url.searchParams.append("city", state.balcony.city);
-    url.searchParams.append("country", state.balcony.country || "Germany");
-    url.searchParams.append("plant_name", plant.name);
-    url.searchParams.append("species", plant.species);
-    url.searchParams.append("last_watered", plant.lastWatered);
-    url.searchParams.append("sun_hours", plant.sunHours);
-    url.searchParams.append("is_covered", state.balcony.isCovered);
-    url.searchParams.append("rain_exposure", plant.rainExposure || false);
-    if (state.balcony.apiKey) {
-      url.searchParams.append("api_key", state.balcony.apiKey);
+  let attempts = 0;
+  while (attempts < 3) {
+    try {
+      const url = new URL(apiBase ? `${apiBase}/api/analyze` : '/api/analyze', window.location.origin);
+      url.searchParams.append("city", state.balcony.city);
+      url.searchParams.append("country", state.balcony.country || "Germany");
+      url.searchParams.append("plant_name", plant.name);
+      url.searchParams.append("species", plant.species);
+      url.searchParams.append("last_watered", plant.lastWatered);
+      url.searchParams.append("sun_hours", plant.sunHours);
+      url.searchParams.append("is_covered", state.balcony.isCovered);
+      url.searchParams.append("rain_exposure", plant.rainExposure || false);
+      if (state.balcony.apiKey) {
+        url.searchParams.append("api_key", state.balcony.apiKey);
+      }
+
+      const res = await fetch(url);
+      if (res.status === 403) {
+        alert("This server requires a valid AI Feature Password. Opening settings modal so you can configure it...");
+        btnEditBalcony.click();
+        const apiField = document.getElementById("field-balcony-api-key");
+        if (apiField) apiField.focus();
+        throw new Error("AI Feature Password is required.");
+      }
+      if (!res.ok) {
+        const errBody = await res.json();
+        throw new Error(errBody.detail || "Agent execution failed");
+      }
+
+      const data = await res.json();
+      const analysis = data.analysis;
+
+      // Update plant details
+      plant.moisture_level = analysis.moisture_level;
+      plant.status = analysis.status;
+      plant.next_watering_date = analysis.next_watering_date;
+      plant.explanation = analysis.explanation;
+      plant.watering_tips = analysis.watering_tips;
+      plant.watered_by_rain = analysis.watered_by_rain;
+      plant.effective_last_watered = analysis.effective_last_watered;
+
+      saveState();
+      renderPlants();
+      updateThirstyPlants();
+      break; // Success
+
+    } catch (err) {
+      alert(`Analysis failed for ${plant.name}: ${err.message}`);
+      break;
+    } finally {
+      loadingOverlay.classList.remove("show");
     }
-
-    const res = await fetch(url);
-    if (!res.ok) {
-      const errBody = await res.json();
-      throw new Error(errBody.detail || "Agent execution failed");
-    }
-
-    const data = await res.json();
-    const analysis = data.analysis;
-
-    // Update plant details
-    plant.moisture_level = analysis.moisture_level;
-    plant.status = analysis.status;
-    plant.next_watering_date = analysis.next_watering_date;
-    plant.explanation = analysis.explanation;
-    plant.watering_tips = analysis.watering_tips;
-    plant.watered_by_rain = analysis.watered_by_rain;
-    plant.effective_last_watered = analysis.effective_last_watered;
-
-    saveState();
-    renderPlants();
-    updateThirstyPlants();
-
-  } catch (err) {
-    alert(`Analysis failed for ${plant.name}: ${err.message}`);
-  } finally {
-    loadingOverlay.classList.remove("show");
   }
 }
 
@@ -417,26 +429,35 @@ async function analyzeAllPlantsBatch() {
     }))
   };
 
-  try {
-    const headers = {
-      "Content-Type": "application/json"
-    };
-    if (state.balcony.apiKey) {
-      headers["X-API-Key"] = state.balcony.apiKey;
-    }
+  let attempts = 0;
+  while (attempts < 3) {
+    try {
+      const headers = {
+        "Content-Type": "application/json"
+      };
+      if (state.balcony.apiKey) {
+        headers["X-API-Key"] = state.balcony.apiKey;
+      }
 
-    const response = await fetch(`${apiBase}/api/analyze`, {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify(requestBody)
-    });
+      const response = await fetch(`${apiBase}/api/analyze`, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(requestBody)
+      });
 
-    if (!response.ok) {
-      const errData = await response.json();
-      throw new Error(errData.detail || "Server error during analysis.");
-    }
+      if (response.status === 403) {
+        alert("This server requires a valid AI Feature Password. Opening settings modal so you can configure it...");
+        btnEditBalcony.click();
+        const apiField = document.getElementById("field-balcony-api-key");
+        if (apiField) apiField.focus();
+        throw new Error("AI Feature Password is required.");
+      }
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail || "Server error during analysis.");
+      }
 
-    const data = await response.json();
+      const data = await response.json();
 
     if (data.success && data.analyses) {
       // Merge results back into plants state
@@ -460,11 +481,14 @@ async function analyzeAllPlantsBatch() {
       throw new Error("Invalid analysis result received.");
     }
 
+    break; // Success, break retry loop
   } catch (err) {
     alert(`Error during AI analysis: ${err.message}\n\nMake sure the FastAPI server is running (Port 8000) and the GEMINI_API_KEY is set.`);
+    break;
   } finally {
     loadingOverlay.classList.remove("show");
   }
+ }
 }
 
 // Run AI Analysis Trigger (Unified)
