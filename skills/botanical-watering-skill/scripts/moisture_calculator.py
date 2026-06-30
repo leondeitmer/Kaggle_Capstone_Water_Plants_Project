@@ -83,10 +83,8 @@ def calculate_plant_moisture(plant: dict, balcony_config: dict, weather_data: di
         logger.error(f"Invalid lastWatered date format: {last_watered_str}. Error: {str(e)}")
         last_watered = now - timedelta(days=2)
         
-    days_since = (now - last_watered).days
-    
-    # Run simulation day-by-day
-    current_moisture = 100.0
+    watered_by_rain = False
+    effective_last_watered = last_watered
     
     # Extract weather arrays from Open-Meteo response
     weather_times = weather_data.get("time", [])
@@ -94,9 +92,34 @@ def calculate_plant_moisture(plant: dict, balcony_config: dict, weather_data: di
     humidities = weather_data.get("humidity_mean_percent", [])
     rains = weather_data.get("precipitation_sum_mm", [])
     
-    # We simulate starting from the day after the last watering up to today
+    # Check if plant was watered by a significant rain event (>= 5.0 mm of rain)
+    MIN_RAIN_FOR_WATERING = 5.0
+    if not is_covered and not rain_exposure:
+        last_watered_date_str = last_watered.strftime("%Y-%m-%d")
+        last_rain_watering_date = None
+        for i, sim_date_str in enumerate(weather_times):
+            if sim_date_str >= last_watered_date_str:
+                rain_mm = rains[i] if i < len(rains) and rains[i] is not None else 0.0
+                if rain_mm >= MIN_RAIN_FOR_WATERING:
+                    last_rain_watering_date = sim_date_str
+                    
+        if last_rain_watering_date:
+            try:
+                parsed_rain_date = datetime.strptime(last_rain_watering_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                if parsed_rain_date > last_watered:
+                    effective_last_watered = parsed_rain_date
+                    watered_by_rain = True
+            except Exception as e:
+                logger.error(f"Error parsing rain date {last_rain_watering_date}: {e}")
+                
+    days_since = (now - effective_last_watered).days
+    
+    # Run simulation day-by-day
+    current_moisture = 100.0
+    
+    # We simulate starting from the day after the effective watering event up to today
     for day_offset in range(1, days_since + 1):
-        sim_date = (last_watered + timedelta(days=day_offset)).strftime("%Y-%m-%d")
+        sim_date = (effective_last_watered + timedelta(days=day_offset)).strftime("%Y-%m-%d")
         
         # Default daily parameters if weather data is missing for this date
         t_mean = 20.0
@@ -151,7 +174,9 @@ def calculate_plant_moisture(plant: dict, balcony_config: dict, weather_data: di
         "plant_id": plant.get("id"),
         "moisture_level": moisture_val,
         "status": status,
-        "next_watering_date": next_water_date
+        "next_watering_date": next_water_date,
+        "watered_by_rain": watered_by_rain,
+        "effective_last_watered": effective_last_watered.strftime("%Y-%m-%d")
     }
 
 def calculate_plants_moisture(balcony_config: dict, plants: list, weather_data: dict) -> list:

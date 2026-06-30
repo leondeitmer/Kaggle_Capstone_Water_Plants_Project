@@ -123,7 +123,13 @@ function renderPlants() {
     const logoClass = isLogo ? "logo-img" : "";
 
     let lastWateredDate = "Unknown";
-    if (plant.lastWatered) {
+    let isRainWatered = false;
+    if (plant.watered_by_rain && plant.effective_last_watered) {
+      try {
+        lastWateredDate = new Date(plant.effective_last_watered).toLocaleDateString([], { dateStyle: 'short' });
+        isRainWatered = true;
+      } catch (e) {}
+    } else if (plant.lastWatered) {
       try {
         lastWateredDate = new Date(plant.lastWatered).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
       } catch (e) {}
@@ -143,7 +149,7 @@ function renderPlants() {
           </div>
           <p class="plant-category"><i class="fa-solid fa-tag"></i> ${plant.species}</p>
           <p class="plant-meta"><strong>Sun:</strong> ${plant.sunHours} hrs/day</p>
-          <p class="plant-meta"><strong>Last Watered:</strong> ${lastWateredDate}</p>
+          <p class="plant-meta"><strong>Last Watered:</strong> ${lastWateredDate} ${isRainWatered ? '<span class="badge badge-rain" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px;" title="Watered by natural rainfall"><i class="fa-solid fa-cloud-showers-heavy"></i> Rain</span>' : ''}</p>
           <p class="plant-meta"><strong>Rain Exposure:</strong> ${plant.rainExposure ? "Covered (Ignored)" : "Exposed"}</p>
           
           <div class="plant-moisture-bar">
@@ -369,6 +375,8 @@ async function analyzeSinglePlant(id) {
     plant.next_watering_date = analysis.next_watering_date;
     plant.explanation = analysis.explanation;
     plant.watering_tips = analysis.watering_tips;
+    plant.watered_by_rain = analysis.watered_by_rain;
+    plant.effective_last_watered = analysis.effective_last_watered;
 
     saveState();
     renderPlants();
@@ -431,6 +439,8 @@ async function analyzeAllPlantsBatch() {
           state.plants[plantIndex].next_watering_date = result.next_watering_date;
           state.plants[plantIndex].explanation = result.explanation;
           state.plants[plantIndex].watering_tips = result.watering_tips;
+          state.plants[plantIndex].watered_by_rain = result.watered_by_rain;
+          state.plants[plantIndex].effective_last_watered = result.effective_last_watered;
         }
       });
 

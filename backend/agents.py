@@ -22,6 +22,8 @@ class SinglePlantAnalysis(BaseModel):
     next_watering_date: str = Field(..., description="Estimated ISO date string (YYYY-MM-DD) for when the plant will next require watering")
     explanation: str = Field(..., description="A concise 1-2 sentence explanation in English of why this decision was made, citing weather and sun exposure.")
     watering_tips: str = Field(..., description="A concise, actionable qualitative watering or care tip in English for this plant, matching the current moisture and plant species.")
+    watered_by_rain: bool = Field(..., description="Whether the plant was watered naturally by rain since the last manual watering")
+    effective_last_watered: str = Field(..., description="The effective last watered date string YYYY-MM-DD (either the manual watering date or the date of last sufficient rain)")
 
 class BatchAnalysisResponse(BaseModel):
     analyses: List[SinglePlantAnalysis]
@@ -215,6 +217,7 @@ Your task is to write a concise 1-2 sentence English explanation summarizing the
 2. The weather parameters (recent temperatures, relative humidity, or rain if applicable).
 3. The impact of the plant's sun hours setting (especially if it deviates from the optimal sun hours for its category) and whether the balcony coverage protected it from rain.
 4. A concise, actionable qualitative watering or care tip in English (watering_tips) matching the current moisture and plant species (e.g., 'Water from below as the soil is highly dried out...' or 'Avoid wetting the leaves during midday sun...').
+5. Set 'watered_by_rain' and 'effective_last_watered' to the values pre-calculated for each plant in the list above.
 
 Return the final results matching the BatchAnalysisResponse schema.
 """
@@ -248,6 +251,8 @@ Return the final results matching the BatchAnalysisResponse schema.
                 "status": "Healthy",
                 "next_watering_date": datetime.now().strftime("%Y-%m-%d"),
                 "explanation": "Analysis could not be performed. (API Error: " + str(e) + ")",
-                "watering_tips": "Unable to generate tips at this time."
+                "watering_tips": "Unable to generate tips at this time.",
+                "watered_by_rain": False,
+                "effective_last_watered": plant.get("lastWatered", datetime.now().strftime("%Y-%m-%d")).split("T")[0]
             })
         return fallback_results
